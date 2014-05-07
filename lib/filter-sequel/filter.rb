@@ -1,4 +1,3 @@
-require 'fastandand'
 require 'sequel'
 
 Sequel.extension :blank
@@ -50,7 +49,7 @@ class Filter
 
   attr_reader :filter_parameters
 
-  def empty?; filter_parameters.empty?; end
+  def empty?; filter_parameters.empty? end
 
   # return a modified dataset containing all the predicates
   def apply( dataset )
@@ -174,7 +173,7 @@ class Filter
     case function_thing.arity
     when 1
       # ignore the key
-      lambda{|expr,value| function_thing[value]}
+      lambda{|_,value| function_thing[value]}
     when -1,2
       # pass both (all) args
       function_thing
@@ -221,22 +220,28 @@ class Filter
     @order_hash ||= Hash[ order_expressions ]
   end
 
-  # because the result for this might be a Hash, or some non-Sequel.expr
+  # The result for this might be a Hash, or some non-Sequel.expr
+  # so it needs to be wrapped with something that will ensure that
+  # the expression is a Sequel.expr.
+  # key:: is a key from the parameter hash. Usually name_pred, eg birth_year_gt
+  # value:: is the value from the parameter hash. Could be a collection.
+  # field:: is the name of the SQL field to use, or nil where it would default to key without its predicate.
   def _to_expr( key, value, field )
     splitter = PredicateSplitter.new key, value
-    predicates.each do |suffix, expr_generator|
-      if splitter.split_key suffix
-        return expr_generator.call( Sequel.expr(field || splitter.field), splitter.value )
-      end
-    end
 
     # the default / else / fall-through is just an equality
-    predicates[:eq].call Sequel.expr(field || key), splitter.value
+    default_proc = ->{predicates.assoc :eq}
+
+    # find a better predicate, if there is one
+    suffix, predicate = predicates.find default_proc do |suffix, expr_generator|
+      splitter.split_key suffix
+    end
+
+    predicate.call Sequel.expr(field || splitter.field), splitter.value
   end
   protected :_to_expr
 
   # turn a filter_parameter key => value into a Sequel::SQL::Expression subclass
-  # TODO might need to use filter_expr here to handle Dataset-style hashes?
   def to_expr( key, value, field = nil )
     Sequel.expr _to_expr( key, value, field )
   end
@@ -244,14 +249,8 @@ class Filter
   # turn the expression at predicate into a Sequel expression with
   # field, having the value for predicate. Will be nil if the
   # predicate has no value in valued_parameters.
-  # Will always be a Sequel::SQL::Expression
+  # Will always be a Sequel::SQL::Expression.
   def expr_for( predicate, field = nil )
-    unless (value = valued_parameters[predicate]).blank?
-      to_expr( predicate, value, field )
-    end
-  end
-
-  def identifier_for( predicate, field = nil )
     unless (value = valued_parameters[predicate]).blank?
       to_expr( predicate, value, field )
     end
@@ -313,6 +312,8 @@ class Filter
     rv
   end
 
+  # hash of keys to expressions, but only where
+  # there are values.
   def expr_hash
     vary = valued_parameters.map do |key, value|
       [ key, to_expr(key, value) ]

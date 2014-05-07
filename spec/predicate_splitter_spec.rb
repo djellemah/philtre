@@ -1,7 +1,6 @@
 require 'rspec'
 require 'faker'
 
-require Pathname(__dir__) + '../lib/filter-sequel/filter.rb'
 require Pathname(__dir__) + '../lib/filter-sequel/predicate_splitter.rb'
 
 # for blank?

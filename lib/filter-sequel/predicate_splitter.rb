@@ -1,6 +1,12 @@
-# Yes, there are side effects
+require 'fastandand'
+require 'sequel'
+
+# This is to split things like birth_year_gt into
+#  - birth_year (the field)
+#  - gt (the predicate)
+# Yes, there are side effects.
 # === is provided so it can be used in case statements
-# which doesn't really work cos they're backwards
+# (which doesn't really work cos they're backwards).
 class PredicateSplitter
   def initialize( key, value )
     @key, @value = key, value
