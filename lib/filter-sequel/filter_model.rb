@@ -1,4 +1,3 @@
-require 'filter.rb'
 require 'ostruct'
 
 class Filter
