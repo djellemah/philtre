@@ -23,6 +23,9 @@ class Filter
   # TODO If your model does not act like an Active Model object, then you
   # should define :to_model yourself returning a proxy object that wraps your
   # object with Active Model compliant methods.
+  # 07-May-2014 Nice idea, except that (at least from 4.0.2) rails uses to_model only in some
+  # cases to get naming, and the original object gets passed to the FormBuilder.
+  # Which is a bit stoopid.
   def to_model
     raise "Use for_form, you can't pass #{self} directly into a form_for call."
   end
