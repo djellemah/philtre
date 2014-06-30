@@ -1,11 +1,12 @@
 # Philtre
 
+Coming Soon...
+
+It's the Sequel equivalent for Ransack, Metasearch, Searchlogic.
 If this doesn't make you fall in love, I don't know what will.
 
 Yeah, I know. Corny naming. Filter => Philtre. But it lets you mix things up
 and something awesome comes out the other side.
-
-It's the Sequel equivalent for Ransack, Metasearch, Searchlogic.
 
 ## Installation
 
