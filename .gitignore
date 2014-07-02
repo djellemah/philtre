@@ -19,3 +19,5 @@ tmp
 .ruby-version
 *.sublime-project
 *.sublime-workspace
+.floo
+.flooignore
