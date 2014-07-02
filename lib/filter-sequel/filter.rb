@@ -32,6 +32,7 @@ class Filter
     # Don't use symbolize_keys because that creates a dependency on ActiveSupport
     @filter_parameters =
     if filter_parameters
+      # preserve 2.0 compatibility
       filter_parameters.inject({}){|ha,(k,v)| ha[k.to_sym] = v; ha}
     else
       {}
@@ -52,7 +53,7 @@ class Filter
   def empty?; filter_parameters.empty? end
 
   # return a modified dataset containing all the predicates
-  def apply( dataset )
+  def call( dataset )
     dataset = dataset.dataset if dataset.respond_to? :dataset
 
     # clone here so later order! calls don't mess with a Model's default dataset
@@ -68,6 +69,8 @@ class Filter
       dataset.order *order_clause
     end
   end
+
+  alias apply call
 
   # Values in the parameter list which are not blank, and not
   # an ordering. That is, parameters which will be used to generate
@@ -85,6 +88,8 @@ class Filter
     end
   end
 
+  # These have to be lambdas cos the have to be evaluated by
+  # Sequel.expr to work.
   def self.parse_predicates
     PredicateDsl.new do
       gt               {|expr, val|    expr >  val          }
@@ -101,16 +106,6 @@ class Filter
         Sequel.& not_nil, not_empty
       end
 
-      # def like_all( expr,arg )
-      #   if arg.is_a?( Array )
-      #     exprs = arg.map do |value|
-      #       Sequel.expr expr => /#{value}/
-      #     end
-      #     Sequel.& *exprs
-      #   else
-      #     Sequel.expr expr => /#{arg}/
-      #   end
-      # end
       like_all do |expr,arg|
         if arg.is_a?( Array )
           exprs = arg.map do |value|
@@ -120,9 +115,6 @@ class Filter
         else
           Sequel.expr expr => /#{arg}/
         end
-      end
-
-      def another( args )
       end
 
       like_any do |expr,arg|
@@ -289,6 +281,7 @@ class Filter
   # return a new filter including only the specified filter parameters/predicates.
   # NOTE predicates are not the same as field names.
   # args to select_block are the same as to filter_parameters, ie it's a Hash
+  # TODO should use clone
   def subset( *keys, &select_block )
     subset_params =
     if block_given?
