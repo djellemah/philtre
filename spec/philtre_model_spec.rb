@@ -3,7 +3,7 @@ require 'faker'
 begin
   require 'active_model'
 
-  require Pathname(__dir__).parent.parent + 'lib/filter-sequel/filter_model.rb'
+  require Pathname(__dir__).parent.parent + 'lib/philtre/filter_model.rb'
 
   # spec/support/active_model_lint.rb
   # adapted from rspec-rails:
@@ -28,9 +28,9 @@ begin
     end
   end
 
-  describe Filter do
+  describe Philtre do
     describe '#for_form' do
-      subject{ Filter.new( one: 1, two: 2 ).for_form }
+      subject{ Philtre.new( one: 1, two: 2 ).for_form }
       it_should_behave_like("ActiveModel")
 
       it 'nil for not present' do

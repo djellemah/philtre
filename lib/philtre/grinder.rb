@@ -1,13 +1,13 @@
 require 'ripar'
-require 'filter-sequel/filter.rb'
-require 'filter-sequel/place_holder.rb'
-require 'filter-sequel/empty_expression.rb'
+require 'philtre/filter.rb'
+require 'philtre/place_holder.rb'
+require 'philtre/empty_expression.rb'
 
 # Using the expressions in the filter, transform a dataset with
 # placeholders into a real dataset with expressions, for example:
 #
 #  ds = Personage.filter( :brief.lieu, :title.lieu ).order( :ordering.lieu )
-#  g = Grinder.new( Filter.new(title: 'Grand High Poobah', :order => :age.desc  ) )
+#  g = Grinder.new( Philtre.new(title: 'Grand High Poobah', :order => :age.desc  ) )
 #  nds = g.transform( ds )
 #  nds.sql
 #
@@ -15,9 +15,9 @@ require 'filter-sequel/empty_expression.rb'
 #
 # In a sense, this is a means to defining SQL functions with
 # optional keyword arguments.
-class Grinder < Sequel::ASTTransformer
+class Philtre::Grinder < Sequel::ASTTransformer
   # filter must respond to expr_for( key, sql_field = nil ), expr_hash and order_hash
-  def initialize( filter = Filter.new )
+  def initialize( filter = Philtre::Filter.new )
     @filter = filter
   end
 
@@ -111,7 +111,7 @@ protected
       # transform empty expressions to false (or nil, but false is more debuggable)
       # can't use nil for all kinds of expressions because nil mean NULL for
       # most of the Sequel::SQL expressions.
-      obj.clone Hash[ v(obj.opts).map{|k,val| [k, val.is_a?(EmptyExpression) ? false : val]} ]
+      obj.clone Hash[ v(obj.opts).map{|k,val| [k, val.is_a?(Philtre::EmptyExpression) ? false : val]} ]
 
     when ->(obj){obj.respond_to? :dataset}
       v obj.dataset
@@ -129,7 +129,7 @@ protected
       end
       rv
 
-    when ::PlaceHolder
+    when Philtre::PlaceHolder
       # get the expression for the placeholder.
       # use the placeholder's field name if given
       expr =
@@ -159,7 +159,7 @@ protected
       context_places[obj.name] = expr
 
       # transform
-      expr || EmptyExpression.new
+      expr || Philtre::EmptyExpression.new
 
     when Array
       # sometimes things are already an empty array, in which
@@ -167,15 +167,15 @@ protected
       return super if obj.empty?
 
       # collect expressions, some may be empty.
-      exprs = super.reject{|e| e.is_a? EmptyExpression}
+      exprs = super.reject{|e| e.is_a? Philtre::EmptyExpression}
 
       # an empty array of expressions must be translated
       # to an empty expression at this point.
-      exprs.empty? ? EmptyExpression.new : exprs
+      exprs.empty? ? Philtre::EmptyExpression.new : exprs
 
     when Sequel::SQL::ComplexExpression
       # use the Array case above, otherwise copy the expression itself
-      v( obj.args ).empty? ? EmptyExpression.new : super
+      v( obj.args ).empty? ? Philtre::EmptyExpression.new : super
 
     else
       super
@@ -187,7 +187,7 @@ end
 module Kernel
 private
   def PlaceHolder( name, sql_field = nil, bt = caller )
-    ::PlaceHolder.new name, sql_field, bt = caller
+    Philtre::PlaceHolder.new name, sql_field, bt = caller
   end
 
   alias_method :Lieu, :PlaceHolder
@@ -206,7 +206,7 @@ end
 class Sequel::Dataset
   # filter must respond_to expr_hash and order_hash
   # will optionally yield a Grinder instance to the block
-  def grind( filter = Filter.new, apply_unknown: true )
+  def grind( filter = Philtre.new, apply_unknown: true )
     grinder = Grinder.new filter
     t_dataset = grinder.transform self, apply_unknown: apply_unknown
     # only yield after the transform, so the grinder has the place holders

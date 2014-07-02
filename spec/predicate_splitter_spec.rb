@@ -1,15 +1,15 @@
 require 'rspec'
 require 'faker'
 
-require Pathname(__dir__) + '../lib/filter-sequel/predicate_splitter.rb'
+require Pathname(__dir__) + '../lib/philtre/predicate_splitter.rb'
 
 # for blank?
 Sequel.extension :blank
 
-describe ::PredicateSplitter do
+describe Philtre::PredicateSplitter do
   describe '#split_key' do
     describe 'successful' do
-      let(:splitter){ ::PredicateSplitter.new( 'birth_year_like', 'fifteeen' ) }
+      let(:splitter){ Philtre::PredicateSplitter.new( 'birth_year_like', 'fifteeen' ) }
 
       it 'returns true' do
         splitter.split_key( :like ).should be_true
@@ -27,7 +27,7 @@ describe ::PredicateSplitter do
     end
 
     describe 'unsuccessful' do
-      let(:splitter){ ::PredicateSplitter.new 'birth_year', 'fifteeen' }
+      let(:splitter){ Philtre::PredicateSplitter.new 'birth_year', 'fifteeen' }
       it 'returns false' do
         splitter.split_key( :like ).should be_false
       end
@@ -44,7 +44,7 @@ describe ::PredicateSplitter do
     end
 
     describe 'custom predicate' do
-      let(:splitter){ ::PredicateSplitter.new( 'custom_predicate', 'fifteeen' ) }
+      let(:splitter){ Philtre::PredicateSplitter.new( 'custom_predicate', 'fifteeen' ) }
       it 'accepts the whole thing' do
         (splitter === :custom_predicate).should === 0
       end
@@ -53,7 +53,7 @@ describe ::PredicateSplitter do
 
   describe '#fv' do
     it 'returns field as symbol and value' do
-      splitter = ::PredicateSplitter.new 'birth_year', 'fifteeen'
+      splitter = Philtre::PredicateSplitter.new 'birth_year', 'fifteeen'
       field, value = splitter.fv
       field.should == :birth_year
       value.should == 'fifteeen'
@@ -62,7 +62,7 @@ describe ::PredicateSplitter do
 
   describe '#ev' do
     it 'returns expression and value' do
-      splitter = ::PredicateSplitter.new 'birth_year', 'fifteeen'
+      splitter = Philtre::PredicateSplitter.new 'birth_year', 'fifteeen'
       expr, value = splitter.ev
 
       expr.should be_a(Sequel::SQL::Identifier)
@@ -72,7 +72,7 @@ describe ::PredicateSplitter do
     end
 
     it 'returns qualified expression and value' do
-      splitter = ::PredicateSplitter.new 'departments__birth_year', 'fifteeen'
+      splitter = Philtre::PredicateSplitter.new 'departments__birth_year', 'fifteeen'
       expr, value = splitter.ev
 
       expr.should be_a(Sequel::SQL::QualifiedIdentifier)

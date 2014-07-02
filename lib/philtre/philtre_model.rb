@@ -1,13 +1,13 @@
 require 'ostruct'
 
-class Filter
+class Philtre
   # These define the interface as used by the views.
   # So this class is available for custom predicates.
   class Model < OpenStruct
     extend ActiveModel::Naming
 
     # Name this as 'filter', so the parameters come back from the form as that.
-    def self.model_name; ActiveModel::Name.new(Filter); end
+    def self.model_name; ActiveModel::Name.new(Philtre); end
 
     # Rest of ActiveModel compliance, because
     #  include ActiveModel::Model
