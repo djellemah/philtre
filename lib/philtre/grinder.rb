@@ -1,4 +1,5 @@
 require 'ripar'
+
 require 'philtre/filter.rb'
 require 'philtre/place_holder.rb'
 require 'philtre/empty_expression.rb'
@@ -48,7 +49,7 @@ class Philtre::Grinder < Sequel::ASTTransformer
         # that are not protected by an outer select.
         filter.subset( *unknown ).apply t_dataset
       else
-        raise "unknown placeholders #{unknown.inspect} in #{filter.predicates.keys}\n#{dataset.sql}"
+        raise "unknown values #{unknown.inspect} for\n#{dataset.sql}"
       end
     else
       t_dataset
@@ -58,13 +59,13 @@ class Philtre::Grinder < Sequel::ASTTransformer
   # Grouped hash of place holders in the original dataset from the last transform.
   # Only has values after transform has been called.
   def places
-    @places
+    @places || raise("Call transform to find place holders.")
   end
 
   # collection of values in the filter that were not found as placeholders
   # in the original dataset.
   def unknown
-    @unknown ||= []
+    @unknown || raise("Call transform to find placeholders not provided by the filter.")
   end
 
 protected

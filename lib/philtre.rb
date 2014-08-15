@@ -27,6 +27,7 @@ module Philtre
   # - with is the param hash (optional, or just use hash-style args)
   #
   # for xample, in rails you could do
+  #
   #  @personages = Philtre.filter dataset: Personage, with: params[:filter]
   #
   # or even
@@ -45,7 +46,6 @@ module Philtre
     alias filter new
   end
 end
-
 
 require 'philtre/core_extensions.rb'
 

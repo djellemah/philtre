@@ -33,9 +33,27 @@ describe Philtre::Grinder do
     ds.sql.should =~ %r{\$birth_year/\*\S+\*/}
   end
 
-  it 'collects placeholders' do
-    nds = grinder.transform ds, apply_unknown: false
-    grinder.places.flat_map{|k,v| v.keys}.should == %i[name title birth_year]
+  describe '#places' do
+    it 'collects placeholders' do
+      nds = grinder.transform ds, apply_unknown: false
+      grinder.places.flat_map{|k,v| v.keys}.should == %i[name title birth_year]
+    end
+
+    it 'fails before transform' do
+      ->{grinder.places}.should raise_error(/Call transform.*place/)
+    end
+  end
+
+  describe '#unknown' do
+    it 'fails before transform' do
+      ->{grinder.unknown}.should raise_error(/Call transform.*not.*filter/)
+    end
+
+    it 'has a list of unknowns' do
+      grinder = Philtre::Grinder.new Philtre::Filter.new( location: 'Spain', name: 'Bartholemew del Pince-Nez', :order => 'name_desc')
+      nds = grinder.transform ds, apply_unknown: true
+      grinder.unknown.should == %i[location]
+    end
   end
 
   it 'removes empty expressions' do
@@ -53,12 +71,12 @@ describe Philtre::Grinder do
 
   it 'raises on unknown filter expressions' do
     grinder = Philtre::Grinder.new Philtre::Filter.new(blah: Faker::Name.name)
-    ->{ grinder.transform( ds, apply_unknown: false ) }.should raise_error(/unknown placeholder/)
+    ->{ grinder.transform( ds, apply_unknown: false ) }.should raise_error(/unknown value/)
   end
 
   it 'raises on unknown order expressions' do
     grinder = Philtre::Grinder.new Philtre::Filter.new( :troll => :name.asc )
-    ->{ grinder.transform( ds, apply_unknown: false ) }.should raise_error(/unknown placeholder/)
+    ->{ grinder.transform( ds, apply_unknown: false ) }.should raise_error(/unknown value/)
   end
 
   it 'substitutes expressions' do
@@ -96,7 +114,7 @@ describe Philtre::Grinder do
   end
 
   it 'ordering survives application of extra parameters' do
-    pending "in Grinder#transform ordering parameters are stripped out by filter.subset"
+    skip 'in Grinder#transform ordering parameters are stripped out by filter.subset'
     grinder = Philtre::Grinder.new Philtre::Filter.new( name: 'Finky Steetchas', :order => ['name_desc', 'dunno'])
     nds = grinder.transform ds, apply_unknown: true
     grinder.unknown.should_not be_empty
