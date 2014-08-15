@@ -116,6 +116,10 @@ protected
     when ->(obj){obj.respond_to? :dataset}
       v obj.dataset
 
+    # for other things that are convertible to dataset
+    when ->(obj){obj.respond_to? :to_dataset}
+      v obj.to_dataset
+
     # Keep the context for place holders,
     # so we know what kind of expression to insert later.
     # Each of :where, :order, :having, :select etc will come as a hash.
@@ -180,56 +184,5 @@ protected
     else
       super
     end
-  end
-end
-
-# several ways to create placeholders in Sequel statements
-module Kernel
-private
-  def PlaceHolder( name, sql_field = nil, bt = caller )
-    Philtre::PlaceHolder.new name, sql_field, bt = caller
-  end
-
-  alias_method :Lieu, :PlaceHolder
-end
-
-class Symbol
-  def lieu( sql_field = nil )
-    Lieu self, sql_field, caller
-  end
-
-  def place_holder( sql_field = nil )
-    PlaceHolder self, sql_field, caller
-  end
-end
-
-class Sequel::Dataset
-  # filter must respond_to expr_hash and order_hash
-  # will optionally yield a Grinder instance to the block
-  def grind( filter = Philtre.new, apply_unknown: true )
-    grinder = Grinder.new filter
-    t_dataset = grinder.transform self, apply_unknown: apply_unknown
-    # only yield after the transform, so the grinder has the place holders
-    yield grinder if block_given?
-    t_dataset
-  end
-end
-
-# Compatibility/Shim
-class Sequel::Dataset
-  include Ripar
-
-  # make the roller understand dataset method
-  def roller
-    rv = super
-    class << rv
-      def dataset; riven end
-    end
-    rv
-  end
-
-  # roll the block and return the resulting dataset immediately
-  def rolled( &blk )
-    Ripar::Roller.rive self, &blk
   end
 end

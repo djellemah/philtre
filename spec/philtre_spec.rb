@@ -287,7 +287,7 @@ describe Philtre do
     end
 
     it 'accepts []' do
-      expressions = Philtre::Philtre.new( flavour: [] ).expressions
+      expressions = Philtre::Filter.new( flavour: [] ).expressions
       expressions.size.should == 1
       expressions.first.should be_a(Sequel::SQL::BooleanExpression)
       expr, value = expressions.first.args

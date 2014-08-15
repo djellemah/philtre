@@ -1,6 +1,5 @@
 require 'rspec'
 require 'faker'
-require 'ripar'
 require 'sequel'
 require 'ripar'
 
@@ -129,11 +128,11 @@ describe Philtre::Grinder do
 
   it 'handles rollers' do
     grinder = Philtre::Grinder.new Philtre::Filter.new(person_id: 212728)
-    tds = Ripar::Roller.new ds do
-      filter linkage: other_ds.where( :person_id.lieu )
+    tds = ds.roller do
+      where linkage: other_ds.where( :person_id.lieu )
     end
     tds.__class__.should == Ripar::Roller
-    pending 'was this testing for tds.riven?'
+
     nds = grinder.transform tds
     nds.sql.should =~ /FROM\s+ods\s+WHERE\s*\(\s*person_id\s*=\s*212728\s*\)/
   end
