@@ -56,6 +56,8 @@ class Philtre::Grinder < Sequel::ASTTransformer
     end
   end
 
+  alias [] transform
+
   # Grouped hash of place holders in the original dataset from the last transform.
   # Only has values after transform has been called.
   def places

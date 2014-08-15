@@ -32,12 +32,15 @@ module Philtre
       (@field || @key).andand.to_sym
     end
 
+    # the operator, or predicate
     def op
       @op.andand.to_sym
     end
 
+    # fv from array of [field_name, value]
     def fv; [field, value]; end
 
+    # ev from array of [expression, value]
     # to make sure things like :users__id are split into qualified field names
     def ev; [Sequel.expr(field), value]; end
   end
