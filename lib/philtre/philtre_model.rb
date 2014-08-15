@@ -1,6 +1,6 @@
 require 'ostruct'
 
-class Philtre
+class Philtre::Filter
   # These define the interface as used by the views.
   # So this class is available for custom predicates.
   class Model < OpenStruct

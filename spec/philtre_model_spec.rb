@@ -1,36 +1,44 @@
 require 'rspec'
 require 'faker'
+
+# TODO this should be in philtre-rails
 begin
   require 'active_model'
 
-  require Pathname(__dir__).parent.parent + 'lib/philtre/filter_model.rb'
+  require_relative '../lib/philtre/filter.rb'
+  require_relative '../lib/philtre/philtre_model.rb'
 
   # spec/support/active_model_lint.rb
   # adapted from rspec-rails:
   # http://github.com/rspec/rspec-rails/blob/master/spec/rspec/rails/mocks/mock_model_spec.rb
-
   shared_examples_for "ActiveModel" do
-    require 'test/unit/assertions'
-    # require 'active_model/lint'
+    require 'minitest'
+    require 'active_model/lint'
 
-    include Test::Unit::Assertions
+    # needed by MiniTest::Assertions
+    def assertions; @assertions ||= 0 end
+    def assertions=( rhs ); @assertions = rhs end
+
+    include MiniTest::Assertions
+
     include ActiveModel::Lint::Tests
 
-    # to_s is to support ruby-1.9
-    ActiveModel::Lint::Tests.public_instance_methods.map{|m| m.to_s}.grep(/^test/).each do |m|
-      example m.gsub('_',' ') do
-        send m
+    ActiveModel::Lint::Tests
+      .public_instance_methods
+      .grep(/^test/)
+      .each do |test_method|
+        example test_method.to_s.gsub('_',' ') do
+          send test_method
+        end
       end
-    end
 
-    def model
-      subject
-    end
+    # needed for MiniTest::Assertions
+    def model; subject end
   end
 
-  describe Philtre do
+  describe Philtre::Filter do
     describe '#for_form' do
-      subject{ Philtre.new( one: 1, two: 2 ).for_form }
+      subject{ Philtre::Filter.new( one: 1, two: 2 ).for_form }
       it_should_behave_like("ActiveModel")
 
       it 'nil for not present' do
@@ -43,5 +51,7 @@ begin
     end
   end
 rescue LoadError
-  puts 'not testing ActiveModel'
+  describe 'Philtre::Model' do
+    skip 'not testing because active_model not found'
+  end
 end

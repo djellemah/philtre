@@ -7,10 +7,12 @@ require_relative '../lib/philtre/filter.rb'
 Sequel.extension :blank
 
 describe Philtre do
+  # must be in before otherwise it's unpleasant to hook the
+  # class in to the dataset.
   before :all do
     @dataset = Sequel.mock[:planks]
     class Plank < Sequel::Model; end
-    # just generate the bleedin' sql
+    # just stop whining and generate the bleedin' sql, k?
     def @dataset.supports_regexp?; true end
   end
 
