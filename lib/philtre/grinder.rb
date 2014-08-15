@@ -55,11 +55,14 @@ class Philtre::Grinder < Sequel::ASTTransformer
     end
   end
 
-  # get a grouped hash of place holders
+  # Grouped hash of place holders in the original dataset from the last transform.
+  # Only has values after transform has been called.
   def places
     @places
   end
 
+  # collection of values in the filter that were not found as placeholders
+  # in the original dataset.
   def unknown
     @unknown ||= []
   end
@@ -113,6 +116,7 @@ protected
       # most of the Sequel::SQL expressions.
       obj.clone Hash[ v(obj.opts).map{|k,val| [k, val.is_a?(Philtre::EmptyExpression) ? false : val]} ]
 
+    # for Sequel::Models
     when ->(obj){obj.respond_to? :dataset}
       v obj.dataset
 

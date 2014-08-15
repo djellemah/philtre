@@ -1,7 +1,7 @@
-# Philtre::Sequel
+# Philtre
 
-It's the Sequel equivalent for Ransack, Metasearch, Searchlogic. If
-this doesn't make you fall in love, I don't know what will.
+It's the [Sequel](http://sequel.jeremyevans.net) equivalent for Ransack, Metasearch, Searchlogic. If
+this doesn't make you fall in love, I don't know what will :-p
 
 ## Installation
 
@@ -34,7 +34,7 @@ So, using a fairly standard rails-style parameter hash:
   philtre = Philtre::Filter.new( filter_parameters ).apply( Personage.dataset ).sql
 ```
 
-should result in (without formatting)
+should result in (formatting added here for clarity)
 
 ``` SQL
   SELECT *
@@ -48,6 +48,7 @@ should result in (without formatting)
 
 Your form would look like this:
 TODO verify this
+
 ``` haml
 .filter
   = form_for philtre.for_form, url: params.slice(:controller,:action), method: 'get' do |f|

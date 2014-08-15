@@ -3,6 +3,7 @@ module Philtre
   # which returns Sequel::SQL::Expression or something that can
   # become one through Sequel.expr, eg {year: 2013}
   class Predicates < Module
+    # TODO this stuff should be in an experimental branch
     module BasePredicates
       def simple_pred( expr, value )
         puts __method__
@@ -50,6 +51,8 @@ module Philtre
           Sequel.& not_nil, not_empty
         end
 
+        # TODO these would need to have method(:not_like)
+        # and then converted to procs/lambdas and evaluated in that context.
         def not_like( expr, val )
           Sequel.~(like expr, val)
         end
