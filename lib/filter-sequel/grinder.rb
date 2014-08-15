@@ -1,5 +1,6 @@
 require 'filter-sequel/filter.rb'
-require 'dataset_roller'
+require 'filter-sequel/place_holder.rb'
+require 'filter-sequel/empty_expression.rb'
 
 # Using the expressions in the filter, transform a dataset with
 # placeholders into a real dataset with expressions, for example:
@@ -99,7 +100,10 @@ protected
     rv
   end
 
-  # override the ASTTransformer method
+  # Override the ASTTransformer method, which is where the work
+  # is done to transform the dataset containing placeholders into
+  # a dataset containing a proper SQL statement.
+  # Yes, this is in fact every OO purist's worst nightware - a Giant Switch Statement.
   def v( obj )
     case obj
     when Sequel::Dataset
@@ -124,7 +128,7 @@ protected
       end
       rv
 
-    when PlaceHolder
+    when ::PlaceHolder
       # get the expression for the placeholder.
       # use the placeholder's field name if given
       expr =
@@ -176,60 +180,13 @@ protected
       super
     end
   end
-
-  class PlaceHolder < Sequel::SQL::Expression
-    # name is what gets replaced by the operation and correspondingly named value in the filter
-    # sql_field is the name of the field that the operation will compare the named value to.
-    def initialize( name, sql_field = nil, bt = caller )
-      # backtrace
-      @bt = bt
-
-      @name = name
-      @sql_field = sql_field
-    end
-
-    attr_reader :bt
-    attr_reader :name
-    attr_reader :sql_field
-
-    # this is inserted into the generated SQL from a dataset that
-    # contains PlaceHolder instances.
-    def to_s_append( ds, s )
-      s << '$' << name.to_s
-      s << ':' << sql_field.to_s if sql_field
-      s << '/*' << small_source  << '*/'
-    end
-
-    def source
-      bt[1]
-    end
-
-    def small_source
-      source.split('/').last(2).join('/').split(':')[0..1].join(':')
-    end
-
-    def inspect
-      "#<#{self.class} #{name}:#{sql_field} @#{source}>"
-    end
-
-    def to_s
-      "#{name}:#{sql_field} @#{small_source}"
-    end
-  end
-
-  # used when transforming to unaltered or partially
-  # altered datasets
-  class EmptyExpression < Sequel::SQL::Expression
-    # sometimes this is returned in place of an empty array
-    def empty?; true; end
-    def to_s_append( ds, s ); end
-  end
 end
 
+# several ways to create placeholders in Sequel statements
 module Kernel
 private
   def PlaceHolder( name, sql_field = nil, bt = caller )
-    Grinder::PlaceHolder.new name, sql_field, bt = caller
+    ::PlaceHolder.new name, sql_field, bt = caller
   end
 
   alias_method :Lieu, :PlaceHolder

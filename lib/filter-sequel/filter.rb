@@ -1,6 +1,10 @@
 require 'fastandand'
 require 'sequel'
 
+Sequel.extension :blank
+
+require 'filter-sequel/predicate_splitter'
+require 'filter-sequel/predicate_dsl'
 # Parse the predicates on the end of field names, and round-trip the search fields
 # between incoming params, controller and views.
 # So,
@@ -50,7 +54,7 @@ class Filter
 
   # return a modified dataset containing all the predicates
   def apply( dataset )
-    dataset = dataset.dataset if dataset.is_a?(Class) && dataset.ancestors.include?(Sequel::Model)
+    dataset = dataset.dataset if dataset.respond_to? :dataset
 
     # clone here so later order! calls don't mess with a Model's default dataset
     dataset = expressions.inject(dataset.clone) do |dataset, filter_expr|
@@ -80,77 +84,6 @@ class Filter
     valued_parameters.map do |key, value|
       to_expr(key, value)
     end
-  end
-
-  # Yes, there are side effects
-  # === is provided so it can be used in case statements
-  # which doesn't really work cos they're backwards
-  # TODO could possibly use Proc#=== for this?
-  class PredicateSplitter
-    def initialize( key, value )
-      @key, @value = key, value
-    end
-
-    attr_reader :key, :value
-
-    # split postfix from the key and store the two values as name and op
-    # return truthy if successful
-    def split_key( suffix )
-      rv = @key =~ /(.*?)_?(#{suffix})$/
-      @field, @op = $1, $2
-      rv
-    end
-
-    alias_method :===, :split_key
-
-    # return name if the split was successful, or fall back to key
-    # which is handy when none of the predicates match and so key
-    # is probably just a field name.
-    def field
-      (@field || @key).andand.to_sym
-    end
-
-    def op
-      @op.andand.to_sym
-    end
-
-    def fv; [field, value]; end
-
-    # to make sure things like :users__id are split into qualified field names
-    def ev; [Sequel.expr(field), value]; end
-  end
-
-  # constructs a Hash from predicate (ie eq, gt, gte) => block
-  # which returns Sequel::SQL::Expression or something that can
-  # become one through Sequel.expr, eg {year: 2013}
-  class PredicateDsl < Module
-    def initialize( &bloc )
-      @predicates = {}
-      module_eval &bloc if bloc
-    end
-
-    # each meth is a predicate, args is a set of alternatives
-    # and the block is to create the expression for that predicate.
-    def method_missing(meth, *args, &bloc)
-      predicates[meth] = bloc
-      # and set up alternatives
-      args.each{|arg| predicates[arg] = bloc }
-
-      # store them in the module, just for fun
-      send :define_method, meth, &bloc
-      args.each{|arg| send :alias_method, arg, meth }
-    end
-
-    def self.predicalize( &bloc )
-      rv = new( &bloc )
-      rv.predicates
-    end
-
-    def method_added( meth )
-      puts meth
-    end
-
-    attr_reader :predicates
   end
 
   def self.parse_predicates

@@ -15,4 +15,7 @@ spec/reports
 test/tmp
 test/version_tmp
 tmp
-*.bundle
+.ruby-gemset
+.ruby-version
+*.sublime-project
+*.sublime-workspace

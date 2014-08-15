@@ -18,13 +18,15 @@ Gem::Specification.new do |spec|
   spec.test_files    = spec.files.grep(%r{^(test|spec|features)/})
   spec.require_paths = ['lib']
 
+  spec.add_dependency 'sequel'
+  spec.add_dependency 'fastandand'
+
   spec.add_development_dependency 'bundler', '~> 1.5'
   spec.add_development_dependency 'rake'
   spec.add_development_dependency 'rspec'
   spec.add_development_dependency 'pry'
   spec.add_development_dependency 'pry-debugger'
   spec.add_development_dependency 'pry-debundle'
-  spec.add_development_dependency 'fastandand'
-  spec.add_development_dependency 'sequel'
   spec.add_development_dependency 'faker'
+  spec.add_development_dependency 'sqlite3'
 end
