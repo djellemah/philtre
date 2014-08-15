@@ -12,8 +12,8 @@ module Philtre
   #
   #   filter_parameters = {
   #     birth_year: ['2012', '2011'],
-  #     title_like: 'bar',
-  #     order: ['title', 'name_asc', 'date_desc'],
+  #     title_like: 'sir',
+  #     order: ['title', 'name_asc', 'birth_year_desc'],
   #   }
   #
   #   Philtre.new( filter_parameters ).apply( Personage.dataset ).sql
@@ -26,7 +26,7 @@ module Philtre
   # suffixes that match, or just calls the predicate given.
   # TODO need a dual-aspect approach here. One for generating the filter SQL and another
   # for round-tripping the controller <-> view
-  # TODO figure out how to add custom predicates and keep them nicely namespaced
+  # TODO figure out how to add custom predicates and keep them nicely namespaced. Subclasses?
   class Filter
     def initialize( filter_parameters = nil, &custom_predicate_block )
       # This must be a new instance of Hash, because sometimes
