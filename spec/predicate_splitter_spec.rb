@@ -12,7 +12,7 @@ describe Philtre::PredicateSplitter do
       let(:splitter){ Philtre::PredicateSplitter.new( 'birth_year_like', 'fifteeen' ) }
 
       it 'returns true' do
-        splitter.split_key( :like ).should be_true
+        splitter.split_key( :like ).should be_truthy
       end
 
       it 'keeps field as symbol' do
@@ -29,7 +29,7 @@ describe Philtre::PredicateSplitter do
     describe 'unsuccessful' do
       let(:splitter){ Philtre::PredicateSplitter.new 'birth_year', 'fifteeen' }
       it 'returns false' do
-        splitter.split_key( :like ).should be_false
+        splitter.split_key( :like ).should be_falsey
       end
 
       it 'keeps key as symbol' do
