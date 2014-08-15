@@ -28,7 +28,7 @@ module Philtre
   # for round-tripping the controller <-> view
   # TODO figure out how to add custom predicates and keep them nicely namespaced
   class Filter
-    def initialize( filter_parameters = nil, &block )
+    def initialize( filter_parameters = nil, &custom_predicate_block )
       # This must be a new instance of Hash, because sometimes
       # HashWithIndifferentAccess is passed in, which breaks things in here.
       # Don't use symbolize_keys because that creates a dependency on ActiveSupport
@@ -41,9 +41,9 @@ module Philtre
       end
 
       if block_given?
-        case block.arity
+        case custom_predicate_block.arity
         when 0
-          instance_eval &block
+          instance_eval &custom_predicate_block
         else
           yield self
         end
