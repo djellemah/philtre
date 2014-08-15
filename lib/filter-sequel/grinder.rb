@@ -1,3 +1,4 @@
+require 'ripar'
 require 'filter-sequel/filter.rb'
 require 'filter-sequel/place_holder.rb'
 require 'filter-sequel/empty_expression.rb'
@@ -112,7 +113,7 @@ protected
       # most of the Sequel::SQL expressions.
       obj.clone Hash[ v(obj.opts).map{|k,val| [k, val.is_a?(EmptyExpression) ? false : val]} ]
 
-    when DatasetRoller
+    when ->(obj){obj.respond_to? :dataset}
       v obj.dataset
 
     # Keep the context for place holders,
@@ -211,5 +212,24 @@ class Sequel::Dataset
     # only yield after the transform, so the grinder has the place holders
     yield grinder if block_given?
     t_dataset
+  end
+end
+
+# Compatibility/Shim
+class Sequel::Dataset
+  include Ripar
+
+  # make the roller understand dataset method
+  def roller
+    rv = super
+    class << rv
+      def dataset; riven end
+    end
+    rv
+  end
+
+  # roll the block and return the resulting dataset immediately
+  def rolled( &blk )
+    Ripar::Roller.rive self, &blk
   end
 end
