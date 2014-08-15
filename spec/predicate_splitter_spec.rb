@@ -1,7 +1,7 @@
 require 'rspec'
 require 'faker'
 
-require Pathname(__dir__) + '../lib/philtre/predicate_splitter.rb'
+require_relative '../lib/philtre/predicate_splitter.rb'
 
 # for blank?
 Sequel.extension :blank

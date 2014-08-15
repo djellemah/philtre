@@ -3,7 +3,7 @@ require 'faker'
 require 'sequel'
 require 'ripar'
 
-require Pathname(__dir__).parent + 'lib/philtre.rb'
+require_relative '../lib/philtre.rb'
 
 Sequel.extension :blank
 Sequel.extension :core_extensions

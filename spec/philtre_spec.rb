@@ -1,7 +1,7 @@
 require 'rspec'
 require 'faker'
 
-require Pathname(__dir__) + '../lib/philtre/filter.rb'
+require_relative '../lib/philtre/filter.rb'
 
 # for blank?
 Sequel.extension :blank
@@ -62,7 +62,7 @@ describe Philtre do
     it 'defaults to asc' do
       filter = Philtre::Filter.new one: 1, two: 2, order: 'things'
       sqlfrag = filter.order_expr(:things).sql_literal(dataset)
-      sqlfrag.should == "things ASC"
+      sqlfrag.should == 'things ASC'
     end
   end
 
@@ -155,10 +155,10 @@ describe Philtre do
       expr.op.should == :AND
 
       # the not-nil part
-      expr.args.first.op.should == :"IS NOT"
+      expr.args.first.op.should == :'IS NOT'
 
       # the not empty string part
-      expr.args.last.op.should == :"!="
+      expr.args.last.op.should == :'!='
       expr.args.last.args.last.should == ''
     end
   end
@@ -204,7 +204,7 @@ describe Philtre do
 
       expr = filter.to_expr( :year_range, [1984, 1970, 2012] )
       expr.should be_a(Sequel::SQL::Expression)
-      expr.sql_literal(dataset).should == "((year >= 1970) AND (year <= 2012))"
+      expr.sql_literal(dataset).should == '((year >= 1970) AND (year <= 2012))'
     end
   end
 
@@ -282,7 +282,7 @@ describe Philtre do
       Philtre::Filter.new( address: '' ).expressions.should be_empty
     end
 
-    it "ignores nil value" do
+    it 'ignores nil value' do
       Philtre::Filter.new( address: nil ).expressions.should be_empty
     end
 

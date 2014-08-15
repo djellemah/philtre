@@ -2,8 +2,8 @@ require 'rspec'
 require 'faker'
 require 'sequel'
 
-require Pathname(__dir__).parent + 'lib/philtre/grinder.rb'
-require Pathname(__dir__).parent + 'lib/philtre/sequel_extensions.rb'
+require_relative '../lib/philtre/grinder.rb'
+require_relative '../lib/philtre/sequel_extensions.rb'
 
 Sequel.extension :blank
 Sequel.extension :core_extensions
