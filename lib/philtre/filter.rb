@@ -214,9 +214,13 @@ module Philtre
       @order_hash ||= Hash[ order_expressions ]
     end
 
+    # Convert a key (field_op format), a value and a SQL field name
+    # using the set of predicates for this filter, to a SQL expression precursor.
+    #
     # The result for this might be a Hash, or some non-Sequel.expr
     # so it needs to be wrapped with something that will ensure that
     # the expression is a Sequel.expr.
+    #
     # key:: is a key from the parameter hash. Usually name_pred, eg birth_year_gt
     # value:: is the value from the parameter hash. Could be a collection.
     # field:: is the name of the SQL field to use, or nil where it would default to key without its predicate.
@@ -252,7 +256,7 @@ module Philtre
 
     # for use in forms
     def to_h(all=false)
-      filter_parameters.reject{|k,v| all || v.blank?}
+      filter_parameters.select{|k,v| all || !v.blank?}
     end
 
     attr_writer :filter_parameters

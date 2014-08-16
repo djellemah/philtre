@@ -448,6 +448,20 @@ describe Philtre do
     end
   end
 
+  describe '#to_h' do
+    def filter
+      @filter ||= Philtre::Filter.new first: 'James', second: 'McDonald', third: 'Fraser', fourth: '', fifth: nil
+    end
+
+    it 'all values' do
+      filter.to_h(true).size.should == filter.filter_parameters.size
+    end
+
+    it 'only non-blank values' do
+      filter.to_h.size.should == 3
+    end
+  end
+
   describe '#clone' do
     it 'plain clone' do
       filter = Philtre::Filter.new first: 'James', second: 'McDonald', third: 'Fraser'
