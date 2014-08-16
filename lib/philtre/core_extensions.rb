@@ -17,3 +17,15 @@ class Symbol
     PlaceHolder self, sql_field, caller
   end
 end
+
+unless Hash.instance_methods.include? :slice
+  class Hash
+    # return a hash containing only the specified keys
+    def slice( *other_keys )
+      other_keys.inject(Hash.new) do |hash, key|
+        hash[key] = self[key] if has_key?( key )
+        hash
+      end
+    end
+  end
+end
