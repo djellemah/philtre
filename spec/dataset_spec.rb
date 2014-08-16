@@ -4,6 +4,7 @@ require 'sequel'
 
 require_relative '../lib/philtre/grinder.rb'
 require_relative '../lib/philtre/sequel_extensions.rb'
+require_relative '../lib/philtre/core_extensions.rb'
 
 Sequel.extension :blank
 Sequel.extension :core_extensions
@@ -33,14 +34,24 @@ describe Sequel::Dataset do
       rlr = subject.roller do
         where title: 'Exalted Fromaginess'
       end
-      rlr.should_not respond_to(:dataset)
+
+      # This depends on Ripar, so it's a bit fragile
+      rlr.should respond_to(:__class__)
+      rlr.__class__.should == Ripar::Roller
+
+      rlr.should_not respond_to(:datset)
       rlr.should respond_to(:to_dataset)
     end
-
-    it 'handles roller syntax'
   end
 
   describe '#rolled' do
-    it 'gives back a rolled dataset'
+    it 'gives back a rolled dataset' do
+      rlr = subject.rolled do
+        where title: 'Exalted Fromaginess'
+      end
+      rlr.should be_a(Sequel::Dataset)
+      rlr.should_not respond_to(:datset)
+      rlr.should_not respond_to(:to_dataset)
+    end
   end
 end
