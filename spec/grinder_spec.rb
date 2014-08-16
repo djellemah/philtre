@@ -98,6 +98,22 @@ describe Philtre::Grinder do
     nds.sql.should == %q{SELECT * FROM t WHERE ((name = 'Fannie Rosebottom')) ORDER BY name DESC}
   end
 
+  describe 'select placeholder' do
+    it 'remove empty' do
+      mds = ds.select(:name.lieu,:title,:age).where(:title_gt.lieu)
+      grinder = Philtre::Grinder.new Philtre::Filter.new( title_gt: 'sir', name: '')
+      nds = grinder.transform mds, apply_unknown: false
+      nds.sql.should == %q{SELECT title, age FROM t WHERE ((title > 'sir'))}
+    end
+
+    it 'keep non-empty' do
+      mds = ds.select(:name.lieu,:title,:age).where(:title_gt.lieu)
+      grinder = Philtre::Grinder.new Philtre::Filter.new( title_gt: 'sir', name: 'Klaas Arendse')
+      nds = grinder.transform mds, apply_unknown: false
+      nds.sql.should == %q{SELECT name, title, age FROM t WHERE ((name = 'Klaas Arendse') AND (title > 'sir'))}
+    end
+  end
+
   it 'handles subselects' do
     mds = Sequel.mock.from(ds.select(Sequel.lit 'sum(age) as age')).filter( :age.lieu )
     mds.sql.should =~ /age/
