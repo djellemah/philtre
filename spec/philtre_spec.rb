@@ -6,7 +6,7 @@ require_relative '../lib/philtre/filter.rb'
 # for blank?
 Sequel.extension :blank
 
-describe Philtre do
+describe Philtre::Filter do
   # must be in before otherwise it's unpleasant to hook the
   # class in to the dataset.
   before :all do
@@ -20,40 +20,58 @@ describe Philtre do
 
   describe '#initialize' do
     it 'keeps parameters' do
-      filter = Philtre::Filter.new one: 1, two: 2
+      filter = described_class.new one: 1, two: 2
       filter.filter_parameters.keys.should == %i[one two]
     end
 
     it 'defaults parameters' do
-      Philtre::Filter.new.filter_parameters.should == {}
+      described_class.new.filter_parameters.should == {}
     end
 
     it 'keeps empty parameters' do
-      Philtre::Filter.new({}).filter_parameters.should == {}
+      described_class.new({}).filter_parameters.should == {}
     end
 
     it 'converts non-symbol keys' do
-      filter = Philtre::Filter.new 'name' => Faker::Lorem.word, 'title' => Faker::Lorem.word, 'order' => 'owner'
+      filter = described_class.new 'name' => Faker::Lorem.word, 'title' => Faker::Lorem.word, 'order' => 'owner'
       filter.filter_parameters.keys.should == %i[name title order]
     end
 
     it 'treats nil as empty parameters' do
-      filter = Philtre::Filter.new(nil)
+      filter = described_class.new(nil)
       filter.filter_parameters.should == {}
     end
 
-    it 'creates predicates from custom block'
+    describe 'custom predicates' do
+      it 'from block' do
+        filter = described_class.new custom_predicate: 'Special Value' do |flt|
+          flt.add_predicate :custom_predicate do |val|
+            {special_field: val}
+          end
+        end
+        filter.apply(dataset).sql.should == %q{SELECT * FROM planks WHERE (special_field = 'Special Value')}
+      end
+
+      it 'from instance_eval' do
+        filter = described_class.new custom_predicate: 'Special Value' do
+          add_predicate :custom_predicate do |val|
+            {special_field: val}
+          end
+        end
+        filter.apply(dataset).sql.should == %q{SELECT * FROM planks WHERE (special_field = 'Special Value')}
+      end
+    end
   end
 
   describe '#order_expressions' do
     it 'defaults to asc' do
-      filter = Philtre::Filter.new one: 1, two: 2, order: 'things'
+      filter = described_class.new one: 1, two: 2, order: 'things'
       @dataset.order( *filter.order_clause ).sql.should =~ /order by things asc$/i
     end
   end
 
   describe '#order_expr' do
-    filter = Philtre::Filter.new one: 1, two: 2, order: 'things'
+    filter = described_class.new one: 1, two: 2, order: 'things'
 
     it 'nil for nil' do
       filter.order_expr(nil).should be_nil
@@ -64,7 +82,7 @@ describe Philtre do
     end
 
     it 'defaults to asc' do
-      filter = Philtre::Filter.new one: 1, two: 2, order: 'things'
+      filter = described_class.new one: 1, two: 2, order: 'things'
       sqlfrag = filter.order_expr(:things).sql_literal(dataset)
       sqlfrag.should == 'things ASC'
     end
@@ -72,38 +90,38 @@ describe Philtre do
 
   describe '#order_clause' do
     it '[] for nil order parameter' do
-      filter = Philtre::Filter.new one: 1, two: 2
+      filter = described_class.new one: 1, two: 2
       filter.order_clause.should be_empty
     end
 
     it '[] for blank order parameter' do
-      filter = Philtre::Filter.new one: 1, two: 2, order: ''
+      filter = described_class.new one: 1, two: 2, order: ''
       filter.order_clause.should be_empty
     end
 
     # These should really be part of describe '#order_expr'
     it 'defaults to asc' do
-      filter = Philtre::Filter.new one: 1, two: 2, order: 'things'
+      filter = described_class.new one: 1, two: 2, order: 'things'
       @dataset.order( *filter.order_clause ).sql.should =~ /order by things asc$/i
     end
 
     it 'respects desc' do
-      filter = Philtre::Filter.new one: 1, two: 2, order: 'things_desc'
+      filter = described_class.new one: 1, two: 2, order: 'things_desc'
       @dataset.order( *filter.order_clause ).sql.should =~ /order by things desc$/i
     end
 
     it 'respecs asc' do
-      filter = Philtre::Filter.new one: 1, two: 2, order: 'things_desc'
+      filter = described_class.new one: 1, two: 2, order: 'things_desc'
       @dataset.order( *filter.order_clause ).sql.should =~ /order by things desc$/i
     end
 
     it 'handles array' do
-      filter = Philtre::Filter.new one: 1, two: 2, order: ['things_desc', 'stuff', 'orgle_asc']
+      filter = described_class.new one: 1, two: 2, order: ['things_desc', 'stuff', 'orgle_asc']
       @dataset.order( *filter.order_clause ).sql.should =~ /order by things desc, stuff asc, orgle asc$/i
     end
 
     it 'handles array with blanks' do
-      filter = Philtre::Filter.new one: 1, two: 2, order: ['things_desc', nil, 'stuff', '', 'orgle_asc']
+      filter = described_class.new one: 1, two: 2, order: ['things_desc', nil, 'stuff', '', 'orgle_asc']
       @dataset.order( *filter.order_clause ).sql.should =~ /order by things desc, stuff asc, orgle asc$/i
     end
   end
@@ -113,14 +131,14 @@ describe Philtre do
     TRICKY_PREDICATES = %i[like_all like_any not_blank]
 
     it 'creates predicates' do
-      Philtre::Filter.predicates.keys.sort.should == (EASY_PREDICATES + TRICKY_PREDICATES).sort
+      described_class.predicates.keys.sort.should == (EASY_PREDICATES + TRICKY_PREDICATES).sort
     end
 
     EASY_PREDICATES.each do |predicate|
       it "_#{predicate} becomes expression" do
         field = Sequel.expr Faker::Lorem.word.to_sym
         value = Faker::Lorem.word
-        expr_generator = Philtre::Filter.predicates[predicate]
+        expr_generator = described_class.predicates[predicate]
         expr = expr_generator.call field, value
 
         expr.should be_a(Sequel::SQL::BooleanExpression)
@@ -134,7 +152,7 @@ describe Philtre do
     end
 
     it 'like_all takes many' do
-      expr_generator = Philtre::Filter.predicates[:like_all]
+      expr_generator = described_class.predicates[:like_all]
       field = Sequel.expr Faker::Lorem.word.to_sym
       value = 3.times.map{ Faker::Lorem.word }
       expr = expr_generator.call field, value
@@ -143,7 +161,7 @@ describe Philtre do
     end
 
     it 'like_any takes many' do
-      expr_generator = Philtre::Filter.predicates[:like_any]
+      expr_generator = described_class.predicates[:like_any]
       field = Sequel.expr Faker::Lorem.word.to_sym
       value = 3.times.map{ Faker::Lorem.word }
       expr = expr_generator.call field, value
@@ -152,7 +170,7 @@ describe Philtre do
     end
 
     it 'not_blank' do
-      expr_generator = Philtre::Filter.predicates[:not_blank]
+      expr_generator = described_class.predicates[:not_blank]
       field = Sequel.expr Faker::Lorem.word.to_sym
       expr = expr_generator.call field, Faker::Lorem.word
 
@@ -168,7 +186,7 @@ describe Philtre do
   end
 
   describe '#to_expr' do
-    let(:filter){ Philtre::Filter.new name: Faker::Lorem.word, title: Faker::Lorem.word }
+    let(:filter){ described_class.new name: Faker::Lorem.word, title: Faker::Lorem.word }
     it 'is == for name only' do
       expr = Sequel.expr( filter.to_expr( :name, 'hallelujah' ) )
       expr.op.should == :'='
@@ -213,7 +231,7 @@ describe Philtre do
   end
 
   describe '#expr_for' do
-    let(:filter){ Philtre::Filter.new name: Faker::Lorem.word, title: Faker::Lorem.word, interstellar: '' }
+    let(:filter){ described_class.new name: Faker::Lorem.word, title: Faker::Lorem.word, interstellar: '' }
 
     it 'nil for no value' do
       filter.expr_for(:bleh).should be_nil
@@ -241,7 +259,7 @@ describe Philtre do
   end
 
   describe '#order_for' do
-    let(:filter){ Philtre::Filter.new name: Faker::Lorem.word, title: Faker::Lorem.word, order:[:name, :title, :year] }
+    let(:filter){ described_class.new name: Faker::Lorem.word, title: Faker::Lorem.word, order:[:name, :title, :year] }
     let(:dataset){ Sequel.mock[:things] }
 
     it 'nil for no parameter' do
@@ -259,7 +277,7 @@ describe Philtre do
 
   describe '#expressions' do
     it 'generates expressions' do
-      expressions = Philtre::Filter.new( trailer: 'large' ).expressions
+      expressions = described_class.new( trailer: 'large' ).expressions
       expressions.size.should == 1
       expressions.first.should be_a(Sequel::SQL::BooleanExpression)
       expr, value = expressions.first.args
@@ -269,7 +287,7 @@ describe Philtre do
     end
 
     it 'handles stringified operators' do
-      expressions = Philtre::Filter.new( trailer_gte: 'large' ).expressions
+      expressions = described_class.new( trailer_gte: 'large' ).expressions
       expressions.size.should == 1
       expressions.first.should be_a(Sequel::SQL::BooleanExpression)
       expr, value = expressions.first.args
@@ -279,19 +297,19 @@ describe Philtre do
     end
 
     it 'ignores order:' do
-      Philtre::Filter.new(order: %w[one two tre]).expressions.should be_empty
+      described_class.new(order: %w[one two tre]).expressions.should be_empty
     end
 
     it "ignores '' value" do
-      Philtre::Filter.new( address: '' ).expressions.should be_empty
+      described_class.new( address: '' ).expressions.should be_empty
     end
 
     it 'ignores nil value' do
-      Philtre::Filter.new( address: nil ).expressions.should be_empty
+      described_class.new( address: nil ).expressions.should be_empty
     end
 
     it 'accepts []' do
-      expressions = Philtre::Filter.new( flavour: [] ).expressions
+      expressions = described_class.new( flavour: [] ).expressions
       expressions.size.should == 1
       expressions.first.should be_a(Sequel::SQL::BooleanExpression)
       expr, value = expressions.first.args
@@ -302,7 +320,7 @@ describe Philtre do
   end
 
   describe '#apply' do
-    let(:filter){ Philtre::Filter.new name: Faker::Lorem.word, title: Faker::Lorem.word }
+    let(:filter){ described_class.new name: Faker::Lorem.word, title: Faker::Lorem.word }
 
     # make sure the Model dataset isn't impacted by setting the ordering
     # on the filtered dataset.
@@ -335,7 +353,7 @@ describe Philtre do
     end
 
     it 'empty filter parameters' do
-      filter = Philtre::Filter.new
+      filter = described_class.new
       filter.filter_parameters.should be_empty
       filter.apply(@dataset).sql.should =~ /select \* from planks$/i
     end
@@ -364,7 +382,7 @@ describe Philtre do
   end
 
   describe '#add_predicate' do
-    let(:filter){ Philtre::Filter.new name: Faker::Lorem.word, title: Faker::Lorem.word }
+    let(:filter){ described_class.new name: Faker::Lorem.word, title: Faker::Lorem.word }
 
     it 'adds a predicate' do
       filter.add_predicate :tagged_by do |value|
@@ -377,7 +395,7 @@ describe Philtre do
       filter.add_predicate :tagged_by do |value|
         Sequel.expr( Tag.filter(name: value).exists )
       end
-      Philtre::Filter.predicates.keys.should_not include(:tagged_by)
+      described_class.predicates.keys.should_not include(:tagged_by)
     end
 
     it 'modifies arity of 1' do
@@ -404,27 +422,27 @@ describe Philtre do
 
   describe '#empty?' do
     it 'true on no parameters' do
-      Philtre::Filter.new.should be_empty
+      described_class.new.should be_empty
     end
 
     it 'false with parameters' do
-      Philtre::Filter.new(one: 1, two: 2).should_not be_empty
+      described_class.new(one: 1, two: 2).should_not be_empty
     end
   end
 
   describe '#subset' do
     it 'has specified subset of parameter values' do
-      filter = Philtre::Filter.new done_with: 'Hammers', fixed_by: 'Thor'
+      filter = described_class.new done_with: 'Hammers', fixed_by: 'Thor'
       filter.subset( :done_with ).filter_parameters.keys.should == [:done_with]
     end
 
     it 'has block specified subset of parameter values' do
-      filter = Philtre::Filter.new done_with: 'Hammers', fixed_by: 'Thor'
+      filter = described_class.new done_with: 'Hammers', fixed_by: 'Thor'
       filter.subset{|k,v| k == :done_with}.filter_parameters.keys.should == [:done_with]
     end
 
     it 'keeps custom predicates' do
-      filter = Philtre::Filter.new( done_with: 'Hammers').tap do |filter|
+      filter = described_class.new( done_with: 'Hammers').tap do |filter|
         filter.add_predicate :done_with do |things|
           Sequel.expr done: things
         end
@@ -436,14 +454,14 @@ describe Philtre do
 
   describe '#extract!' do
     it 'gives back subset' do
-      filter = Philtre::Filter.new first: 'James', second: 'McDonald', third: 'Fraser'
+      filter = described_class.new first: 'James', second: 'McDonald', third: 'Fraser'
       extracted = filter.extract!(:first)
       extracted.to_h.size.should == 1
       extracted.to_h.should have_key(:first)
     end
 
     it 'removes specified keys' do
-      filter = Philtre::Filter.new first: 'James', second: 'McDonald', third: 'Fraser'
+      filter = described_class.new first: 'James', second: 'McDonald', third: 'Fraser'
       extracted = filter.extract!(:first, :third)
       filter.to_h.size.should == 1
       filter.to_h.should have_key(:second)
@@ -452,7 +470,7 @@ describe Philtre do
 
   describe '#to_h' do
     def filter
-      @filter ||= Philtre::Filter.new first: 'James', second: 'McDonald', third: 'Fraser', fourth: '', fifth: nil
+      @filter ||= described_class.new first: 'James', second: 'McDonald', third: 'Fraser', fourth: '', fifth: nil
     end
 
     it 'all values' do
@@ -466,14 +484,14 @@ describe Philtre do
 
   describe '#clone' do
     it 'plain clone' do
-      filter = Philtre::Filter.new first: 'James', second: 'McDonald', third: 'Fraser'
+      filter = described_class.new first: 'James', second: 'McDonald', third: 'Fraser'
       cloned = filter.clone
       cloned.filter_parameters.should == filter.filter_parameters
     end
 
     it 'clone with extras leaves original' do
       value_hash = {first: 'James', second: 'McDonald', third: 'Fraser'}.freeze
-      filter = Philtre::Filter.new value_hash
+      filter = described_class.new value_hash
       cloned = filter.clone( extra: 'Magoodies')
 
       filter.filter_parameters.should == value_hash
@@ -481,7 +499,7 @@ describe Philtre do
 
     it 'clone with extras adds values' do
       value_hash = {first: 'James', second: 'McDonald', third: 'Fraser'}.freeze
-      filter = Philtre::Filter.new value_hash
+      filter = described_class.new value_hash
       cloned = filter.clone( extra: 'Magoodies')
 
       (cloned.filter_parameters.keys & filter.filter_parameters.keys).should == filter.filter_parameters.keys
