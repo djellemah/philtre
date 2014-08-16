@@ -41,6 +41,8 @@ describe Philtre do
       filter = Philtre::Filter.new(nil)
       filter.filter_parameters.should == {}
     end
+
+    it 'creates predicates from custom block'
   end
 
   describe '#order_expressions' do
