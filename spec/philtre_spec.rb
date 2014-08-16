@@ -151,22 +151,44 @@ describe Philtre::Filter do
       end
     end
 
-    it 'like_all takes many' do
-      expr_generator = described_class.predicates[:like_all]
-      field = Sequel.expr Faker::Lorem.word.to_sym
-      value = 3.times.map{ Faker::Lorem.word }
-      expr = expr_generator.call field, value
-      expr.args.size.should == 3
-      expr.op.should == :AND
+    describe 'like_all' do
+      it 'takes one' do
+        expr_generator = described_class.predicates[:like_all]
+        field = Sequel.expr Faker::Lorem.word.to_sym
+        value = Faker::Lorem.word
+        expr = expr_generator.call field, value
+        expr.args.size.should == 2
+        expr.op.should == :~
+      end
+
+      it 'takes many' do
+        expr_generator = described_class.predicates[:like_all]
+        field = Sequel.expr Faker::Lorem.word.to_sym
+        value = 3.times.map{ Faker::Lorem.word }
+        expr = expr_generator.call field, value
+        expr.args.size.should == 3
+        expr.op.should == :AND
+      end
     end
 
-    it 'like_any takes many' do
-      expr_generator = described_class.predicates[:like_any]
-      field = Sequel.expr Faker::Lorem.word.to_sym
-      value = 3.times.map{ Faker::Lorem.word }
-      expr = expr_generator.call field, value
-      expr.args.size.should == 3
-      expr.op.should == :OR
+    describe 'like_any' do
+      it 'takes one' do
+        expr_generator = described_class.predicates[:like_any]
+        field = Sequel.expr Faker::Lorem.word.to_sym
+        value = Faker::Lorem.word
+        expr = expr_generator.call field, value
+        expr.args.size.should == 2
+        expr.op.should == :~
+      end
+
+      it 'takes many' do
+        expr_generator = described_class.predicates[:like_any]
+        field = Sequel.expr Faker::Lorem.word.to_sym
+        value = 3.times.map{ Faker::Lorem.word }
+        expr = expr_generator.call field, value
+        expr.args.size.should == 3
+        expr.op.should == :OR
+      end
     end
 
     it 'not_blank' do
