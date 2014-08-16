@@ -35,9 +35,7 @@ module Philtre
   #  @personages = Philtre.filter dataset: Personage, name: 'Dylan', age_gt: 21, age_lt: 67
   #
   def self.filter( dataset: nil, with: {}, **kwargs )
-    puts with.inspect
-    puts kwargs.inspect
-    Filter.new(with.merge kwargs).apply(dataset)
+    new(with.merge kwargs).apply(dataset)
   end
 
   # same as
