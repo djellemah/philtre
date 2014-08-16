@@ -15,8 +15,8 @@ module Philtre
   # Just a factory method that calls Filter.new
   #
   #  philtre = Philtre.new params[:filter]
-  def self.new( *args, &blk )
-    Filter.new *args, &blk
+  def self.new( *filter_parameters, &blk )
+    Filter.new *filter_parameters, &blk
   end
 
   # This is the high-level, easy-to-read smalltalk-style interface
@@ -36,10 +36,14 @@ module Philtre
     new(with.merge kwargs).apply(dataset)
   end
 
-  # same as
-  #  dataset = YourModel.filter( :name.lieu, )
-  def self.grind( dataset, with: {} )
-    alias filter new
+  # Create a grinder with the parameters, and
+  # use it on the dataset. Return the result.
+  #
+  # dataset should have placeholders, otherwise calling this
+  # method just warms your cpu.
+  def self.grind( dataset: nil, with: {}, **kwargs )
+    filter = new(with.merge kwargs)
+    Philtre::Grinder.new(filter).transform(dataset)
   end
 end
 
