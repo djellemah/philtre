@@ -19,6 +19,12 @@ Or install it yourself as:
 
 ## Usage
 
+Nothing fancy. Just:
+
+  $ rspec spec
+
+## Usage
+
 Parse the predicates on the end of field names, and round-trip the
 search fields between incoming params, controller and views.
 
