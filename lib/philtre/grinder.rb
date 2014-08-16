@@ -7,7 +7,7 @@ require 'philtre/empty_expression.rb'
 # Using the expressions in the filter, transform a dataset with
 # placeholders into a real dataset with expressions, for example:
 #
-#  ds = Personage.filter( :brief.lieu, :title.lieu ).order( :ordering.lieu )
+#  ds = Personage.filter( :brief.lieu, :title.lieu ).order( :age.lieu )
 #  g = Grinder.new( Philtre.new(title: 'Grand High Poobah', :order => :age.desc  ) )
 #  nds = g.transform( ds )
 #  nds.sql

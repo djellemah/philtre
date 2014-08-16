@@ -1,9 +1,9 @@
 require 'philtre/filter.rb'
 require 'philtre/grinder.rb'
 
-# The top-level interface to Philtre. There are several ways
+# The high-level interface to Philtre. There are several ways
 # to use it:
-# 1. (Philtre.new)
+# 1. Philtre.new
 #     philtre = Philtre.new name: 'Moustafa'
 # 1. Philtre
 #     philtre = Philtre dataset: some_dataset, age_gt: 21
@@ -11,8 +11,6 @@ require 'philtre/grinder.rb'
 # 1. Philtre.filter
 #     philtre = Philtre.filter dataset: some_dataset, name: 'Moustafa', age_gt: 21
 #     philtre = Philtre.filter dataset: some_dataset, with: {name: 'Moustafa', age_gt: 21}
-# 1. Philtre::Filter.new
-#     philtre = Philtre::Filter.new name: 'Moustafa', age_gt: 21
 module Philtre
   # Just a factory method that calls Filter.new
   #
@@ -26,7 +24,7 @@ module Philtre
   # - dataset is a Sequel::Model or a Sequel::Dataset
   # - with is the param hash (optional, or just use hash-style args)
   #
-  # for xample, in rails you could do
+  # for x-ample, in rails you could do
   #
   #  @personages = Philtre.filter dataset: Personage, with: params[:filter]
   #
