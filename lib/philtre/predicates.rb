@@ -1,10 +1,9 @@
 module Philtre
-  # container for methods
-  # which return Sequel::SQL::Expression or something that can
-  # become one through Sequel.expr, eg {year: 2013}
+  # Container for methods which return Sequel::SQL::Expression or something
+  # that can become one through Sequel.expr, eg {year: 2013}
   #
   # Reminder: they're defined as methods so we can benefit from
-  # using them inside this class to define other predicates
+  # using them inside this class to define other predicates.
   #
   # This can be extended in all the usual ruby ways: by including a module,
   # reopening the class. Also using extend_with which takes a PredicateDsl block.
@@ -13,14 +12,15 @@ module Philtre
       extend_with &bloc
     end
 
-    # pass a block that can contain a combination
-    # of def meth_name() or the DSL defined by PredicateDsl.
+    # pass a block that can contain a combination of def meth_name() or the
+    # DSL defined by PredicateDsl.
     def extend_with( &bloc )
       extend PredicateDsl.new(&bloc)
     end
 
-    # Convert a field_predicate (field_op format), a value and a SQL field name
-    # using the set of predicates, to something convertible to a Sequel expression.
+    # Convert a field_predicate (field_op format), a value and a SQL field
+    # name using the set of predicates, to something convertible to a Sequel
+    # expression.
     #
     # field_predicate:: is a key from the parameter hash. Usually name_pred, eg birth_year_gt
     # value:: is the value from the parameter hash. Could be a collection.
