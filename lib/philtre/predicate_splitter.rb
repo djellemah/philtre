@@ -1,5 +1,4 @@
 require 'fastandand'
-require 'sequel'
 
 module Philtre
   # This is to split things like birth_year_gt into
@@ -15,7 +14,7 @@ module Philtre
 
     attr_reader :key, :value
 
-    # split postfix from the key and store the two values as name and op
+    # split suffix from the key and store the two values as name and op
     # return truthy if successful
     def split_key( suffix )
       rv = @key =~ /(.*?)_?(#{suffix})$/
@@ -37,12 +36,5 @@ module Philtre
     def op
       @op.andand.to_sym
     end
-
-    # fv from array of [field_name, value]
-    def fv; [field, value]; end
-
-    # ev from array of [expression, value]
-    # to make sure things like :users__id are split into qualified field names
-    def ev; [Sequel.expr(field), value]; end
   end
 end

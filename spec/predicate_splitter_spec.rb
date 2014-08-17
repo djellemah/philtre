@@ -50,37 +50,5 @@ describe Philtre::PredicateSplitter do
       end
     end
   end
-
-  describe '#fv' do
-    it 'returns field as symbol and value' do
-      splitter = Philtre::PredicateSplitter.new 'birth_year', 'fifteeen'
-      field, value = splitter.fv
-      field.should == :birth_year
-      value.should == 'fifteeen'
-    end
-  end
-
-  describe '#ev' do
-    it 'returns expression and value' do
-      splitter = Philtre::PredicateSplitter.new 'birth_year', 'fifteeen'
-      expr, value = splitter.ev
-
-      expr.should be_a(Sequel::SQL::Identifier)
-      expr.value.should == 'birth_year'
-
-      value.should == 'fifteeen'
-    end
-
-    it 'returns qualified expression and value' do
-      splitter = Philtre::PredicateSplitter.new 'departments__birth_year', 'fifteeen'
-      expr, value = splitter.ev
-
-      expr.should be_a(Sequel::SQL::QualifiedIdentifier)
-      expr.table.should == 'departments'
-      expr.column.should == 'birth_year'
-
-      value.should == 'fifteeen'
-    end
-  end
 end
 
