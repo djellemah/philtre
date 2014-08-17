@@ -93,25 +93,13 @@ module Philtre
 
       # more complex predicates
       def like_all( expr, arg )
-        if arg.is_a?( Array )
-          exprs = arg.map do |value|
-            like expr, value
-          end
-          Sequel.& *exprs
-        else
-          like expr, arg
-        end
+        exprs = Array(arg).map {|value| like expr, value }
+        Sequel.& *exprs
       end
 
       def like_any( expr, arg )
-        if arg.is_a?( Array )
-          exprs = arg.map do |value|
-            like expr, value
-          end
-          Sequel.| *exprs
-        else
-          like expr, arg
-        end
+        exprs = Array(arg).map {|value| like expr, value }
+        Sequel.| *exprs
       end
     end
 

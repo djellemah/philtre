@@ -159,8 +159,13 @@ describe Philtre::Filter do
         field = Faker::Lorem.word
         value = Faker::Lorem.word
         expr = described_class.predicates.call :"#{field}_like_all", value
-        expr.args.size.should == 2
-        expr.op.should == :'~*'
+        expr.args.size.should == 1
+        expr.op.should == :NOOP
+
+        expr.args.first.op.should == :'~*'
+        ident, value = expr.args.first.args
+        ident.value.should == field
+        value.should == value
       end
 
       it 'takes many' do
@@ -177,8 +182,13 @@ describe Philtre::Filter do
         field = Faker::Lorem.word
         value = Faker::Lorem.word
         expr = described_class.predicates.call :"#{field}_like_any", value
-        expr.args.size.should == 2
-        expr.op.should == :'~*'
+        expr.args.size.should == 1
+        expr.op.should == :NOOP
+
+        expr.args.first.op.should == :'~*'
+        ident, value = expr.args.first.args
+        ident.value.should == field
+        value.should == value
       end
 
       it 'takes many' do
