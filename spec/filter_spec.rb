@@ -43,18 +43,22 @@ describe Philtre::Filter do
     end
 
     describe 'custom predicates' do
-      it 'from block' do
-        filter = described_class.new custom_predicate: 'Special Value' do |flt|
-          flt.add_predicate :custom_predicate do |val|
-            {special_field: val}
+      it 'from yield' do
+        outside = 'Outside Value'
+        filter = described_class.new custom_predicate: 'Special Value' do |predicates|
+          # yip, you really do have to use the define_method hack here
+          # to get outside values into the predicates module.
+          predicates.send :define_method, :custom_predicate do | val |
+            {special_field: val, other_special_field: outside}
           end
         end
-        filter.apply(dataset).sql.should == %q{SELECT * FROM planks WHERE (special_field = 'Special Value')}
+        filter.apply(dataset).sql.should == %q{SELECT * FROM planks WHERE ((special_field = 'Special Value') AND (other_special_field = 'Outside Value'))}
       end
 
-      it 'from instance_eval' do
+      it 'from module_eval' do
         filter = described_class.new custom_predicate: 'Special Value' do
-          add_predicate :custom_predicate do |val|
+          # this is just a normal module block.
+          def custom_predicate( val )
             {special_field: val}
           end
         end
@@ -127,24 +131,23 @@ describe Philtre::Filter do
   end
 
   describe '#predicates' do
-    EASY_PREDICATES = %i[gt gte gteq lt lte lteq eq not_eq matches like]
-    TRICKY_PREDICATES = %i[like_all like_any not_blank]
+    EASY_PREDICATES = %i[gt gte gteq lt lte lteq eq not_eq matches like not_like]
+    TRICKY_PREDICATES = %i[like_all like_any not_blank blank]
 
     it 'creates predicates' do
-      described_class.predicates.keys.sort.should == (EASY_PREDICATES + TRICKY_PREDICATES).sort
+      described_class.predicates.predicate_names.sort.should == (EASY_PREDICATES + TRICKY_PREDICATES).sort
     end
 
     EASY_PREDICATES.each do |predicate|
       it "_#{predicate} becomes expression" do
-        field = Sequel.expr Faker::Lorem.word.to_sym
+        field = Faker::Lorem.word.to_sym
         value = Faker::Lorem.word
-        expr_generator = described_class.predicates[predicate]
-        expr = expr_generator.call field, value
+        expr = described_class.predicates.call field, value
 
         expr.should be_a(Sequel::SQL::BooleanExpression)
 
         expr.args.first.should be_a(Sequel::SQL::Identifier)
-        expr.args.first.should == field
+        expr.args.first.should == Sequel.expr(field)
         expr.args.last.should == value
 
         expr.sql_literal(@dataset).should be_a(String)
@@ -153,19 +156,17 @@ describe Philtre::Filter do
 
     describe 'like_all' do
       it 'takes one' do
-        expr_generator = described_class.predicates[:like_all]
-        field = Sequel.expr Faker::Lorem.word.to_sym
+        field = Faker::Lorem.word
         value = Faker::Lorem.word
-        expr = expr_generator.call field, value
+        expr = described_class.predicates.call :"#{field}_like_all", value
         expr.args.size.should == 2
-        expr.op.should == :~
+        expr.op.should == :'~*'
       end
 
       it 'takes many' do
-        expr_generator = described_class.predicates[:like_all]
-        field = Sequel.expr Faker::Lorem.word.to_sym
+        field = Faker::Lorem.word
         value = 3.times.map{ Faker::Lorem.word }
-        expr = expr_generator.call field, value
+        expr = described_class.predicates.call :"#{field}_like_all", value
         expr.args.size.should == 3
         expr.op.should == :AND
       end
@@ -173,28 +174,25 @@ describe Philtre::Filter do
 
     describe 'like_any' do
       it 'takes one' do
-        expr_generator = described_class.predicates[:like_any]
-        field = Sequel.expr Faker::Lorem.word.to_sym
+        field = Faker::Lorem.word
         value = Faker::Lorem.word
-        expr = expr_generator.call field, value
+        expr = described_class.predicates.call :"#{field}_like_any", value
         expr.args.size.should == 2
-        expr.op.should == :~
+        expr.op.should == :'~*'
       end
 
       it 'takes many' do
-        expr_generator = described_class.predicates[:like_any]
-        field = Sequel.expr Faker::Lorem.word.to_sym
+        field = Faker::Lorem.word
         value = 3.times.map{ Faker::Lorem.word }
-        expr = expr_generator.call field, value
+        expr = described_class.predicates.call :"#{field}_like_any", value
         expr.args.size.should == 3
         expr.op.should == :OR
       end
     end
 
     it 'not_blank' do
-      expr_generator = described_class.predicates[:not_blank]
-      field = Sequel.expr Faker::Lorem.word.to_sym
-      expr = expr_generator.call field, Faker::Lorem.word
+      field = Sequel.expr Faker::Lorem.word
+      expr = described_class.predicates.call :"#{field}_not_blank", Faker::Lorem.word
 
       expr.op.should == :AND
 
@@ -241,9 +239,11 @@ describe Philtre::Filter do
     end
 
     it 'must always be a Sequel::SQL::Expression' do
-      filter.add_predicate :year_range do |jumbled_years|
-        first, last = jumbled_years.sort.instance_eval{|ry| [ry.first, ry.last]}
-        { year: first..last }
+      filter.predicates.extend_with do
+        def year_range(jumbled_years)
+          first, last = jumbled_years.sort.instance_eval{|ry| [ry.first, ry.last]}
+          { year: first..last }
+        end
       end
 
       expr = filter.to_expr( :year_range, [1984, 1970, 2012] )
@@ -403,45 +403,6 @@ describe Philtre::Filter do
     end
   end
 
-  describe '#add_predicate' do
-    let(:filter){ described_class.new name: Faker::Lorem.word, title: Faker::Lorem.word }
-
-    it 'adds a predicate' do
-      filter.add_predicate :tagged_by do |value|
-        Sequel.expr( Tag.filter(name: value).exists )
-      end
-      filter.predicates[:tagged_by].should be_a(Proc)
-    end
-
-    it 'does not modify class instance variable' do
-      filter.add_predicate :tagged_by do |value|
-        Sequel.expr( Tag.filter(name: value).exists )
-      end
-      described_class.predicates.keys.should_not include(:tagged_by)
-    end
-
-    it 'modifies arity of 1' do
-      filter.add_predicate :tagged_by do |value|
-        value
-      end
-      filter.predicates[:tagged_by].call(:key, :value).should == :value
-    end
-
-    it 'handles arity of 2' do
-      filter.add_predicate :tagged_by do |key, value|
-        [key, value]
-      end
-      filter.predicates[:tagged_by].call(:key, :value).should == [:key, :value]
-    end
-
-    it 'handles arity of *' do
-      filter.add_predicate :tagged_by do |*args|
-        args
-      end
-      filter.predicates[:tagged_by].call(:key, :value).should == [:key, :value]
-    end
-  end
-
   describe '#empty?' do
     it 'true on no parameters' do
       described_class.new.should be_empty
@@ -464,13 +425,13 @@ describe Philtre::Filter do
     end
 
     it 'keeps custom predicates' do
-      filter = described_class.new( done_with: 'Hammers').tap do |filter|
-        filter.add_predicate :done_with do |things|
+      filter = described_class.new done_with: 'Hammers' do
+        def done_with( things )
           Sequel.expr done: things
         end
       end
 
-      filter.subset( :done_with ).predicates.keys.should include( :done_with )
+      filter.subset( :done_with ).predicates.should respond_to(:done_with)
     end
   end
 

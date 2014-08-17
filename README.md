@@ -90,12 +90,15 @@ There are two ways:
 1) You can also define your own by creating a Filter with a block:
 
 ``` ruby
-  philtre = Philtre.new filter_parameters do |flt|
-    flt.add_predicate :tagged_by_id do |tag_ids|
-      Tag.db[:projects_tags].select(:personage_id).filter(tag_id: tag_ids, :project_id => :personage__id ).exists
+  philtre = Philtre.new filter_parameters do
+    def tagged_by_id(tag_ids)
+      Tag.db[:projects_tags]
+        .select(:personage_id)
+        .filter(tag_id: tag_ids, :project_id => :personage__id )
+        .exists
     end
 
-    flt.add_predicate :really_fancy do |tag_ids|
+    def really_fancy(tag_ids)
       # do some really fancy SQL here
     end
 

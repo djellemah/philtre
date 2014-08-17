@@ -1,94 +1,120 @@
 module Philtre
-  # constructs a Hash from predicate (ie eq, gt, gte) => block
-  # which returns Sequel::SQL::Expression or something that can
+  # container for methods
+  # which return Sequel::SQL::Expression or something that can
   # become one through Sequel.expr, eg {year: 2013}
-  class Predicates < Module
-    # TODO this stuff should be in an experimental branch
-    module BasePredicates
-      def simple_pred( expr, value )
-        puts __method__
-      end
-    end
-
+  #
+  # Reminder: they're defined as methods so we can benefit from
+  # using them inside this class to define other predicates
+  #
+  # This can be extended in all the usual ruby ways: by including a module,
+  # reopening the class. Also using extend_with which takes a PredicateDsl block.
+  class Predicates
     def initialize( &bloc )
-      # module_eval &bloc if bloc
-      super
-      extend BasePredicates
+      extend_with &bloc
     end
 
-    # each meth is a predicate, args is a set of alternatives
-    # and the block is to create the expression for that predicate.
-    def method_missing(meth, *args, &bloc)
-      puts "method_missing #{meth}"
-      # store them in the module, just for fun
-      define_method meth, &bloc
-      args.each{|arg| send :alias_method, arg, meth }
+    # pass a block that can contain a combination
+    # of def meth_name() or the DSL defined by PredicateDsl.
+    def extend_with( &bloc )
+      extend PredicateDsl.new(&bloc)
     end
 
-    def self.construct_named_predicate( meth, *args, &bloc )
-      puts "#{meth} with #{args.inspect}"
-      # and this is where the whole splitter predicate thing is done
+    # Convert a field_predicate (field_op format), a value and a SQL field name
+    # using the set of predicates, to something convertible to a Sequel expression.
+    #
+    # field_predicate:: is a key from the parameter hash. Usually name_pred, eg birth_year_gt
+    # value:: is the value from the parameter hash. Could be a collection.
+    # field:: is the name of the SQL field to use, or nil where it would default to key without its predicate.
+    def define_name_predicate( field_predicate, value, field = nil )
+      splitter = PredicateSplitter.new field_predicate, value
+
+      # the default / else / fall-through is just an equality
+      default_proc = ->{:eq}
+
+      # find a better predicate, if there is one
+      suffix = predicate_names.find default_proc do |suffix|
+        splitter.split_key suffix
+      end
+
+      # wrap the field name first, to infect the expressions so all the
+      # operators work.
+      field_name = Sequel.expr(field || splitter.field)
+
+      define_singleton_method field_predicate do |value|
+        send suffix, field_name, value
+      end
     end
 
-    def self.default_predicates
-      defining_module_self = self
-      new do
-        define_method :method_missing do |meth, *args, &block|
-          defining_module_self.construct_named_predicate meth, *args, &block
-        end
+    protected :define_name_predicate
 
-        gt               {|expr, val|    expr >  val          }
-        gte( :gteq )     {|expr, val|    expr >= val          }
-        lt               {|expr, val|    expr <  val          }
-        lte( :lteq )     {|expr, val|    expr <= val          }
-        eq               {|expr, val| Sequel.expr( expr => val) }
-        not_eq           {|expr, val| ~Sequel.expr( expr => val) }
-        matches( :like ) {|expr, val| Sequel.expr( expr => /#{val}/i) }
+    # TODO this should probably also be method_missing?
+    def call( field_predicate, value, field = nil )
+      unless respond_to? field_predicate
+        define_name_predicate field_predicate, value, field
+      end
+      send field_predicate, value
+    end
 
-        not_blank do |expr, _|
-          not_nil = ~Sequel.expr(expr => nil)
-          not_empty = ~Sequel.expr(expr => '')
-          Sequel.& not_nil, not_empty
-        end
+    # The main interface from Filter#to_expr
+    alias [] call
 
-        # TODO these would need to have method(:not_like)
-        # and then converted to procs/lambdas and evaluated in that context.
-        def not_like( expr, val )
-          Sequel.~(like expr, val)
-        end
+    def predicate_names
+      DefaultPredicates.instance_methods
+    end
 
-        # def like_all( expr,arg )
-        #   if arg.is_a?( Array )
-        #     exprs = arg.map do |value|
-        #       Sequel.expr expr => /#{value}/
-        #     end
-        #     Sequel.& *exprs
-        #   else
-        #     Sequel.expr expr => /#{arg}/
-        #   end
-        # end
-        like_all do |expr,arg|
-          if arg.is_a?( Array )
-            exprs = arg.map do |value|
-              Sequel.expr expr => /#{value}/
-            end
-            Sequel.& *exprs
-          else
-            Sequel.expr expr => /#{arg}/
+    # Define the set of default predicates.
+    DefaultPredicates = PredicateDsl.new do
+      # longer suffixes first, so they match first in define_name_predicate
+      not_eq           {|expr, val| ~Sequel.expr( expr => val)       }
+
+      def not_like( expr, val )
+        Sequel.~(like expr, val)
+      end
+
+      matches( :like ) {|expr, val|  Sequel.expr( expr => /#{val}/i) }
+
+      def not_blank(expr, val)
+        Sequel.~(blank expr, val)
+      end
+
+      def blank(expr, _)
+        is_nil = Sequel.expr(expr => nil)
+        is_empty = Sequel.expr(expr => '')
+        Sequel.| is_nil, is_empty
+      end
+
+      # and now the shorter suffixes
+      eq               {|expr, val|  Sequel.expr( expr => val)       }
+      gt               {|expr, val|    expr >  val                   }
+      gte( :gteq )     {|expr, val|    expr >= val                   }
+      lt               {|expr, val|    expr <  val                   }
+      lte( :lteq )     {|expr, val|    expr <= val                   }
+
+      # more complex predicates
+      def like_all( expr, arg )
+        if arg.is_a?( Array )
+          exprs = arg.map do |value|
+            like expr, value
           end
+          Sequel.& *exprs
+        else
+          like expr, arg
         end
+      end
 
-        like_any do |expr,arg|
-          if arg.is_a?( Array )
-            exprs = arg.map do |value|
-              Sequel.expr expr => /#{value}/
-            end
-            Sequel.| *exprs
-          else
-            Sequel.expr expr => /#{arg}/
+      def like_any( expr, arg )
+        if arg.is_a?( Array )
+          exprs = arg.map do |value|
+            like expr, value
           end
+          Sequel.| *exprs
+        else
+          like expr, arg
         end
       end
     end
+
+    # make the available to Predicates instances.
+    include DefaultPredicates
   end
 end
