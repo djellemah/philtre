@@ -1,7 +1,2 @@
-philtre-rails:
- ☐ railties so it can just be included
- ☐ report bug for ActiveModel
- ☐ place to put sort headers
-
-philtre:
-  ☐ spec/grinder_spec.rb:139 something wrong in roller - doesn't ever replace the PlaceHolders
+ ☐ spec coverage
+ ☐ predicate dsl and moduleness

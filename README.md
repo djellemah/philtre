@@ -3,11 +3,17 @@
 It's the [Sequel](http://sequel.jeremyevans.net) equivalent for Ransack, Metasearch, Searchlogic. If
 this doesn't make you fall in love, I don't know what will :-p
 
+See philtre-rails for rails integration.
+
 ## Installation
 
 Add this line to your application's Gemfile:
 
     gem 'philtre'
+
+Or for all the rails integration goodies
+
+    gem 'philtre-rails'
 
 And then execute:
 
@@ -25,8 +31,8 @@ Nothing fancy. Just:
 
 ## Usage
 
-Parse the predicates on the end of field names, and round-trip the
-search fields between incoming params, controller and views.
+Parse the predicates on the end of field names, and modify a Sequel::Dataset
+to retrieve matching rows.
 
 So, using a fairly standard rails-style parameter hash:
 
@@ -54,22 +60,6 @@ should result in (formatting added here for clarity)
     ("title" = 'bar'))
   ORDER BY ("title" ASC, "name" ASC, "date" DESC)
 ```
-
-In rails (you would need the ```philtre-rails``` gem) your filter form would look like this:
-TODO verify this
-
-``` haml
-.filter
-  = form_for philtre.for_form, url: params.slice(:controller,:action), method: 'get' do |f|
-    = f.hidden_field :order
-    = f.text_field :title_like, placeholder: 'Fancy Title'
-    = f.select :birth_year, (Date.today.year-90 .. Date.today.year).map( &:to_s), include_blank: 'Year'
-    = f.submit 'Filter', name: nil, class: 'btn'
-```
-
-The ```for_form``` method is clunky. But ```ActiveModel``` seems to only use the result of ```to_model```
-for naming and route generation, and then reverts to the object for the actual values.
-I'm hoping they had a good reason to do it that way...
 
 ## Predicates
 
@@ -189,7 +179,7 @@ Sometimes method chaining gets ugly. So you can say
 
 Notice that values outside the block are accessible inside, _without_
 the need for a block parameter. This uses Ripar under the cover and indirects
-the binding lookup, so can result in errors that you won't expect.
+the binding lookup, so may result in errors that you won't expect.
 
 ## Specs
 
