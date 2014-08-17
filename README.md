@@ -25,12 +25,6 @@ Or install it yourself as:
 
 ## Basic Usage
 
-Nothing fancy. Just:
-
-  $ rspec spec
-
-## Usage
-
 Parse the predicates on the end of field names, and modify a Sequel::Dataset
 to retrieve matching rows.
 
