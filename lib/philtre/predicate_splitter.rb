@@ -24,6 +24,7 @@ module Philtre
     end
 
     alias_method :===, :split_key
+    alias_method :=~, :split_key
 
     # return name if the split was successful, or fall back to key
     # which is handy when none of the predicates match and so key

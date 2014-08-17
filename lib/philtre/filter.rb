@@ -135,6 +135,7 @@ module Philtre
     end
 
     # turn a filter_parameter key => value into a Sequel::SQL::Expression subclass
+    # field will be the field name ultimately used in the expression. Defaults to key.
     def to_expr( key, value, field = nil )
       Sequel.expr( predicates[key, value, field] )
     end

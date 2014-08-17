@@ -33,7 +33,7 @@ module Philtre
 
       # find a better predicate, if there is one
       suffix = predicate_names.find default_proc do |suffix|
-        splitter.split_key suffix
+        splitter =~ suffix
       end
 
       # wrap the field name first, to infect the expressions so all the
@@ -48,6 +48,7 @@ module Philtre
     protected :define_name_predicate
 
     # TODO this should probably also be method_missing?
+    # field is only used once for any given field_predicate
     def call( field_predicate, value, field = nil )
       unless respond_to? field_predicate
         define_name_predicate field_predicate, value, field
