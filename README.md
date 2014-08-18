@@ -3,7 +3,7 @@
 It's the [Sequel](http://sequel.jeremyevans.net) equivalent for Ransack, Metasearch, Searchlogic. If
 this doesn't make you fall in love, I don't know what will :-p
 
-See philtre-rails for rails integration.
+See [philtre-rails](http://github.com/djellemah/philtre-rails) for rails integration.
 
 ## Installation
 
