@@ -174,9 +174,10 @@ Sometimes method chaining gets ugly. So you can say
   end
 ```
 
-Notice that values outside the block are accessible inside, _without_
-the need for a block parameter. This uses Ripar under the cover and indirects
-the binding lookup, so may result in errors that you won't expect.
+Notice that values outside the block are accessible inside, _without_ the need
+for a block parameter. This uses [Ripar](https://github.com/djellemah/ripar/)
+under the cover and indirects the binding lookup, so may result in errors that
+you won't expect.
 
 ## Specs
 
