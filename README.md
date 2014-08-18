@@ -1,4 +1,4 @@
-# Philtre
+# philtre [![Gem Version](https://badge.fury.io/rb/philtre.png)](http://badge.fury.io/rb/philtre)
 
 It's the [Sequel](http://sequel.jeremyevans.net) equivalent for Ransack, Metasearch, Searchlogic. If
 this doesn't make you fall in love, I don't know what will :-p
