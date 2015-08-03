@@ -411,242 +411,260 @@ describe Philtre::Filter do
       end
     end
   end
-  #
-  # describe '#expr_for' do
-  #   let(:filter){ described_class.new name: Faker::Lorem.word, title: Faker::Lorem.word, interstellar: '' }
-  #
-  #   it 'nil for no value' do
-  #     filter.expr_for(:bleh).should be_nil
-  #   end
-  #
-  #   it 'nil for no value' do
-  #     filter.expr_for(:interstellar).should be_nil
-  #   end
-  #
-  #   it 'expression for existing value' do
-  #     filter.expr_for(:name).should_not be_nil
-  #     filter.expr_for(:name).should be_a(Sequel::SQL::BooleanExpression)
-  #   end
-  #
-  #   it 'alternate name' do
-  #     expr = filter.expr_for(:name, :things__name)
-  #     expr.should_not be_nil
-  #     expr.should be_a(Sequel::SQL::BooleanExpression)
-  #
-  #     expr.args.first.tap do |field_expr|
-  #       field_expr.column.should == 'name'
-  #       field_expr.table.should == 'things'
-  #     end
-  #   end
-  # end
 
-  # describe '#order_for' do
-  #   let(:filter){ described_class.new name: Faker::Lorem.word, title: Faker::Lorem.word, order:[:name, :title, :year] }
-  #   let(:dataset){ Sequel.mock[:things] }
-  #
-  #   it 'nil for no parameter' do
-  #     filter.order_for( :icecream_count ).should be_nil
-  #   end
-  #
-  #   it 'ascending' do
-  #     filter.order_for(:year).sql_literal(dataset).should == 'year ASC'
-  #   end
-  #
-  #   it 'name clash' do
-  #     filter.order_for(:title).sql_literal(dataset).should == 'title ASC'
-  #   end
-  # end
-  #
-  # describe '#expressions' do
-  #   it 'generates expressions' do
-  #     expressions = described_class.new( trailer: 'large' ).expressions
-  #     expressions.size.should == 1
-  #     expressions.first.should be_a(Sequel::SQL::BooleanExpression)
-  #     expr, value = expressions.first.args
-  #     expr.should be_a(Sequel::SQL::Identifier)
-  #     expr.value.should == 'trailer'
-  #     value.should == 'large'
-  #   end
-  #
-  #   it 'handles stringified operators' do
-  #     expressions = described_class.new( trailer_gte: 'large' ).expressions
-  #     expressions.size.should == 1
-  #     expressions.first.should be_a(Sequel::SQL::BooleanExpression)
-  #     expr, value = expressions.first.args
-  #     expr.should be_a(Sequel::SQL::Identifier)
-  #     expr.value.should == 'trailer'
-  #     value.should == 'large'
-  #   end
-  #
-  #   it 'ignores order:' do
-  #     described_class.new(order: %w[one two tre]).expressions.should be_empty
-  #   end
-  #
-  #   it "ignores '' value" do
-  #     described_class.new( address: '' ).expressions.should be_empty
-  #   end
-  #
-  #   it 'ignores nil value' do
-  #     described_class.new( address: nil ).expressions.should be_empty
-  #   end
-  #
-  #   it 'accepts []' do
-  #     expressions = described_class.new( flavour: [] ).expressions
-  #     expressions.size.should == 1
-  #     expressions.first.should be_a(Sequel::SQL::BooleanExpression)
-  #     expr, value = expressions.first.args
-  #     expr.should be_a(Sequel::SQL::Identifier)
-  #     expr.value.should == 'flavour'
-  #     value.should == []
-  #   end
-  # end
-  #
-  # describe '#apply' do
-  #   let(:filter){ described_class.new name: Faker::Lorem.word, title: Faker::Lorem.word }
-  #
-  #   # make sure the Model dataset isn't impacted by setting the ordering
-  #   # on the filtered dataset.
-  #   it 'clones' do
-  #     orig_dataset = Plank.dataset
-  #     filter.filter_parameters[:order] = :title
-  #     filter.apply(Plank.dataset)
-  #     Plank.dataset.should == orig_dataset
-  #   end
-  #
-  #   it 'accepts Sequel::Model subclasses' do
-  #     ds = filter.apply(Plank)
-  #     ds.should be_a(Sequel::Dataset)
-  #     ds.sql.should =~ /planks/
-  #   end
-  #
-  #   it 'filter parameters' do
-  #     sql = filter.apply(@dataset).sql
-  #     sql.should =~ /select \* from planks where \(\(name = '\w+'\) and \(title = '\w+'\)\)$/i
-  #   end
-  #
-  #   it 'single order clause' do
-  #     filter.filter_parameters[:order] = :title
-  #     filter.apply(@dataset).sql.should =~ /order by.*title/i
-  #   end
-  #
-  #   it 'multiple order clause' do
-  #     filter.filter_parameters[:order] = [:title, :owner]
-  #     filter.apply(@dataset).sql.should =~ /order by.*title.*owner/i
-  #   end
-  #
-  #   it 'empty filter parameters' do
-  #     filter = described_class.new
-  #     filter.filter_parameters.should be_empty
-  #     filter.apply(@dataset).sql.should =~ /select \* from planks$/i
-  #   end
-  #
-  #   it 'no order clause' do
-  #     sql = filter.apply(@dataset).sql
-  #     sql.should_not =~ /order by/i
-  #   end
-  #
-  #   it 'no order clause keeps previous order clause' do
-  #     sql = filter.apply(@dataset.order(:watookal)).sql
-  #     sql.should =~ /order by/i
-  #   end
-  #
-  #   it 'excludes blank values' do
-  #     filter.filter_parameters[:name] = ''
-  #     sql = filter.apply(@dataset).sql
-  #     sql.should =~ /select \* from planks where \(title = '\w+'\)$/i
-  #   end
-  #
-  #   it 'excludes nil values' do
-  #     filter.filter_parameters[:name] = nil
-  #     sql = filter.apply(@dataset).sql
-  #     sql.should =~ /select \* from planks where \(title = '\w+'\)$/i
-  #   end
-  # end
-  #
-  # describe '#empty?' do
-  #   it 'true on no parameters' do
-  #     described_class.new.should be_empty
-  #   end
-  #
-  #   it 'false with parameters' do
-  #     described_class.new(one: 1, two: 2).should_not be_empty
-  #   end
-  # end
-  #
-  # describe '#subset' do
-  #   it 'has specified subset of parameter values' do
-  #     filter = described_class.new done_with: 'Hammers', fixed_by: 'Thor'
-  #     filter.subset( :done_with ).filter_parameters.keys.should == [:done_with]
-  #   end
-  #
-  #   it 'has block specified subset of parameter values' do
-  #     filter = described_class.new done_with: 'Hammers', fixed_by: 'Thor'
-  #     filter.subset{|k,v| k == :done_with}.filter_parameters.keys.should == [:done_with]
-  #   end
-  #
-  #   it 'keeps custom predicates' do
-  #     filter = described_class.new done_with: 'Hammers' do
-  #       def done_with( things )
-  #         Sequel.expr done: things
-  #       end
-  #     end
-  #
-  #     filter.subset( :done_with ).predicates.should respond_to(:done_with)
-  #   end
-  # end
-  #
-  # describe '#extract!' do
-  #   it 'gives back subset' do
-  #     filter = described_class.new first: 'James', second: 'McDonald', third: 'Fraser'
-  #     extracted = filter.extract!(:first)
-  #     extracted.to_h.size.should == 1
-  #     extracted.to_h.should have_key(:first)
-  #   end
-  #
-  #   it 'removes specified keys' do
-  #     filter = described_class.new first: 'James', second: 'McDonald', third: 'Fraser'
-  #     extracted = filter.extract!(:first, :third)
-  #     filter.to_h.size.should == 1
-  #     filter.to_h.should have_key(:second)
-  #   end
-  # end
-  #
-  # describe '#to_h' do
-  #   def filter
-  #     @filter ||= described_class.new first: 'James', second: 'McDonald', third: 'Fraser', fourth: '', fifth: nil
-  #   end
-  #
-  #   it 'all values' do
-  #     filter.to_h(true).size.should == filter.filter_parameters.size
-  #   end
-  #
-  #   it 'only non-blank values' do
-  #     filter.to_h.size.should == 3
-  #   end
-  # end
-  #
-  # describe '#clone' do
-  #   it 'plain clone' do
-  #     filter = described_class.new first: 'James', second: 'McDonald', third: 'Fraser'
-  #     cloned = filter.clone
-  #     cloned.filter_parameters.should == filter.filter_parameters
-  #   end
-  #
-  #   it 'clone with extras leaves original' do
-  #     value_hash = {first: 'James', second: 'McDonald', third: 'Fraser'}.freeze
-  #     filter = described_class.new value_hash
-  #     cloned = filter.clone( extra: 'Magoodies')
-  #
-  #     filter.filter_parameters.should == value_hash
-  #   end
-  #
-  #   it 'clone with extras adds values' do
-  #     value_hash = {first: 'James', second: 'McDonald', third: 'Fraser'}.freeze
-  #     filter = described_class.new value_hash
-  #     cloned = filter.clone( extra: 'Magoodies')
-  #
-  #     (cloned.filter_parameters.keys & filter.filter_parameters.keys).should == filter.filter_parameters.keys
-  #     (cloned.filter_parameters.keys - filter.filter_parameters.keys).should == [:extra]
-  #   end
-  # end
+  describe '#expr_for' do
+    let(:filter) { described_class.new name: Faker::Lorem.word, title: Faker::Lorem.word, interstellar: '' }
+
+    it 'nil for no value' do
+      filter.expr_for(:bleh).should be_nil
+    end
+
+    it 'nil for no value' do
+      filter.expr_for(:interstellar).should be_nil
+    end
+
+    it 'expression for existing value' do
+      filter.expr_for(:name).should_not be_nil
+      filter.expr_for(:name).should be_a(Sequel::SQL::BooleanExpression)
+    end
+
+    it 'alternate name' do
+      expr = filter.expr_for(:name, :things__name)
+      expr.should_not be_nil
+      expr.should be_a(Sequel::SQL::BooleanExpression)
+
+      expr.args.first.tap do |field_expr|
+        field_expr.column.should == 'name'
+        field_expr.table.should == 'things'
+      end
+    end
+
+    describe 'hstore' do
+      let(:word) { Faker::Lorem.word }
+      let(:filter) { described_class.new :'store[name]' => word, :'store[title]' => Faker::Lorem.word }
+
+      it 'expression for existing value' do
+        filter.expr_for(:'store[name]').should_not be_nil
+        filter.expr_for(:'store[name]').should be_a(Sequel::SQL::BooleanExpression)
+      end
+
+      it 'alternate name' do
+        expr = filter.expr_for(:'store[name]', :'things__store[name]')
+        expr.should_not be_nil
+        expr.should be_a(Sequel::SQL::BooleanExpression)
+
+        expr.args.first.args.should == [:store, {'name' => word}]
+      end
+    end
+  end
+
+  describe '#order_for' do
+    let(:filter) { described_class.new name: Faker::Lorem.word, title: Faker::Lorem.word, order: [:name, :title, :year] }
+    let(:dataset) { Sequel.mock[:things] }
+
+    it 'nil for no parameter' do
+      filter.order_for(:icecream_count).should be_nil
+    end
+
+    it 'ascending' do
+      filter.order_for(:year).sql_literal(dataset).should == 'year ASC'
+    end
+
+    it 'name clash' do
+      filter.order_for(:title).sql_literal(dataset).should == 'title ASC'
+    end
+  end
+
+  describe '#expressions' do
+    it 'generates expressions' do
+      expressions = described_class.new(trailer: 'large').expressions
+      expressions.size.should == 1
+      expressions.first.should be_a(Sequel::SQL::BooleanExpression)
+      expr, value = expressions.first.args
+      expr.should be_a(Sequel::SQL::Identifier)
+      expr.value.should == 'trailer'
+      value.should == 'large'
+    end
+
+    it 'handles stringified operators' do
+      expressions = described_class.new(trailer_gte: 'large').expressions
+      expressions.size.should == 1
+      expressions.first.should be_a(Sequel::SQL::BooleanExpression)
+      expr, value = expressions.first.args
+      expr.should be_a(Sequel::SQL::Identifier)
+      expr.value.should == 'trailer'
+      value.should == 'large'
+    end
+
+    it 'ignores order:' do
+      described_class.new(order: %w[one two tre]).expressions.should be_empty
+    end
+
+    it "ignores '' value" do
+      described_class.new(address: '').expressions.should be_empty
+    end
+
+    it 'ignores nil value' do
+      described_class.new(address: nil).expressions.should be_empty
+    end
+
+    it 'accepts []' do
+      expressions = described_class.new(flavour: []).expressions
+      expressions.size.should == 1
+      expressions.first.should be_a(Sequel::SQL::BooleanExpression)
+      expr, value = expressions.first.args
+      expr.should be_a(Sequel::SQL::Identifier)
+      expr.value.should == 'flavour'
+      value.should == []
+    end
+  end
+
+  describe '#apply' do
+    let(:filter) { described_class.new name: Faker::Lorem.word, title: Faker::Lorem.word }
+
+    # make sure the Model dataset isn't impacted by setting the ordering
+    # on the filtered dataset.
+    it 'clones' do
+      orig_dataset = Plank.dataset
+      filter.filter_parameters[:order] = :title
+      filter.apply(Plank.dataset)
+      Plank.dataset.should == orig_dataset
+    end
+
+    it 'accepts Sequel::Model subclasses' do
+      ds = filter.apply(Plank)
+      ds.should be_a(Sequel::Dataset)
+      ds.sql.should =~ /planks/
+    end
+
+    it 'filter parameters' do
+      sql = filter.apply(@dataset).sql
+      sql.should =~ /select \* from planks where \(\(name = '\w+'\) and \(title = '\w+'\)\)$/i
+    end
+
+    it 'single order clause' do
+      filter.filter_parameters[:order] = :title
+      filter.apply(@dataset).sql.should =~ /order by.*title/i
+    end
+
+    it 'multiple order clause' do
+      filter.filter_parameters[:order] = [:title, :owner]
+      filter.apply(@dataset).sql.should =~ /order by.*title.*owner/i
+    end
+
+    it 'empty filter parameters' do
+      filter = described_class.new
+      filter.filter_parameters.should be_empty
+      filter.apply(@dataset).sql.should =~ /select \* from planks$/i
+    end
+
+    it 'no order clause' do
+      sql = filter.apply(@dataset).sql
+      sql.should_not =~ /order by/i
+    end
+
+    it 'no order clause keeps previous order clause' do
+      sql = filter.apply(@dataset.order(:watookal)).sql
+      sql.should =~ /order by/i
+    end
+
+    it 'excludes blank values' do
+      filter.filter_parameters[:name] = ''
+      sql = filter.apply(@dataset).sql
+      sql.should =~ /select \* from planks where \(title = '\w+'\)$/i
+    end
+
+    it 'excludes nil values' do
+      filter.filter_parameters[:name] = nil
+      sql = filter.apply(@dataset).sql
+      sql.should =~ /select \* from planks where \(title = '\w+'\)$/i
+    end
+  end
+
+  describe '#empty?' do
+    it 'true on no parameters' do
+      described_class.new.should be_empty
+    end
+
+    it 'false with parameters' do
+      described_class.new(one: 1, two: 2).should_not be_empty
+    end
+  end
+
+  describe '#subset' do
+    it 'has specified subset of parameter values' do
+      filter = described_class.new done_with: 'Hammers', fixed_by: 'Thor'
+      filter.subset(:done_with).filter_parameters.keys.should == [:done_with]
+    end
+
+    it 'has block specified subset of parameter values' do
+      filter = described_class.new done_with: 'Hammers', fixed_by: 'Thor'
+      filter.subset { |k, v| k == :done_with }.filter_parameters.keys.should == [:done_with]
+    end
+
+    it 'keeps custom predicates' do
+      filter = described_class.new done_with: 'Hammers' do
+        def done_with(things)
+          Sequel.expr done: things
+        end
+      end
+
+      filter.subset(:done_with).predicates.should respond_to(:done_with)
+    end
+  end
+
+  describe '#extract!' do
+    it 'gives back subset' do
+      filter = described_class.new first: 'James', second: 'McDonald', third: 'Fraser'
+      extracted = filter.extract!(:first)
+      extracted.to_h.size.should == 1
+      extracted.to_h.should have_key(:first)
+    end
+
+    it 'removes specified keys' do
+      filter = described_class.new first: 'James', second: 'McDonald', third: 'Fraser'
+      extracted = filter.extract!(:first, :third)
+      filter.to_h.size.should == 1
+      filter.to_h.should have_key(:second)
+    end
+  end
+
+  describe '#to_h' do
+    def filter
+      @filter ||= described_class.new first: 'James', second: 'McDonald', third: 'Fraser', fourth: '', fifth: nil
+    end
+
+    it 'all values' do
+      filter.to_h(true).size.should == filter.filter_parameters.size
+    end
+
+    it 'only non-blank values' do
+      filter.to_h.size.should == 3
+    end
+  end
+
+  describe '#clone' do
+    it 'plain clone' do
+      filter = described_class.new first: 'James', second: 'McDonald', third: 'Fraser'
+      cloned = filter.clone
+      cloned.filter_parameters.should == filter.filter_parameters
+    end
+
+    it 'clone with extras leaves original' do
+      value_hash = {first: 'James', second: 'McDonald', third: 'Fraser'}.freeze
+      filter = described_class.new value_hash
+      cloned = filter.clone(extra: 'Magoodies')
+
+      filter.filter_parameters.should == value_hash
+    end
+
+    it 'clone with extras adds values' do
+      value_hash = {first: 'James', second: 'McDonald', third: 'Fraser'}.freeze
+      filter = described_class.new value_hash
+      cloned = filter.clone(extra: 'Magoodies')
+
+      (cloned.filter_parameters.keys & filter.filter_parameters.keys).should == filter.filter_parameters.keys
+      (cloned.filter_parameters.keys - filter.filter_parameters.keys).should == [:extra]
+    end
+  end
 end
