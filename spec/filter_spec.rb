@@ -134,7 +134,7 @@ describe Philtre::Filter do
   end
 
   describe '#predicates' do
-    EASY_PREDICATES = %i[gt gte gteq lt lte lteq eq not_eq matches like not_like cont not_cont in not_in starts_with not_starts_with ends_with not_ends_with]
+    EASY_PREDICATES = %i[gt gte gteq lt lte lteq eq not_eq matches like not_like cont not_cont in not_in start not_start end not_end]
     TRICKY_PREDICATES = %i[like_all like_any not_blank blank]
 
     it 'creates predicates' do
@@ -155,9 +155,9 @@ describe Philtre::Filter do
         expr.args.first.should == Sequel.expr(field)
 
         expected_value = case predicate
-                           when :starts_with, :not_starts_with
+                           when :start, :not_start
                              "^#{value}"
-                           when :ends_with, :not_ends_with
+                           when :end, :not_end
                              "#{value}$"
                            else
                              value
@@ -179,9 +179,9 @@ describe Philtre::Filter do
         expr.should be_a(Sequel::SQL::BooleanExpression)
 
         expected_value = case predicate
-                           when :starts_with, :not_starts_with
+                           when :start, :not_start
                              "^#{value}"
-                           when :ends_with, :not_ends_with
+                           when :end, :not_end
                              "#{value}$"
                            else
                              value

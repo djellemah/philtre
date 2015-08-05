@@ -140,11 +140,14 @@ module Philtre
         Sequel.| *exprs
       end
 
-      not_starts_with { |expr, val| Sequel.~(starts_with expr, val) }
-      starts_with { |expr, val| Sequel.expr(expr => /^#{val}/i) }
+      not_start { |expr, val| Sequel.~(start expr, val) }
+      start { |expr, val| Sequel.expr(expr => /^#{val}/i) }
 
-      not_ends_with { |expr, val| Sequel.~(ends_with expr, val) }
-      ends_with { |expr, val| Sequel.expr(expr => /#{val}$/i) }
+      not_end { |expr, val| Sequel.~(send 'end', expr, val) }
+
+      define_method 'end' do |expr, val|
+        Sequel.expr(expr => /#{val}$/i)
+      end
     end
 
     HStorePredicates = PredicateDsl.new do
@@ -181,11 +184,11 @@ module Philtre
       hstore_lte(:hstore_lteq) { |column, key, val| column[key] <= val }
 
 
-      hstore_not_starts_with { |column, key, val| Sequel.~(hstore_starts_with column, key, val) }
-      hstore_starts_with { |column, key, val| Sequel.expr(column[key] => /^#{val}/i) }
+      hstore_not_start { |column, key, val| Sequel.~(hstore_start column, key, val) }
+      hstore_start { |column, key, val| Sequel.expr(column[key] => /^#{val}/i) }
 
-      hstore_not_ends_with { |column, key, val| Sequel.~(hstore_ends_with column, key, val) }
-      hstore_ends_with { |column, key, val| Sequel.expr(column[key] => /#{val}$/i) }
+      hstore_not_end { |column, key, val| Sequel.~(hstore_end column, key, val) }
+      hstore_end { |column, key, val| Sequel.expr(column[key] => /#{val}$/i) }
 
       def hstore_like_all(column, key, val)
         exprs = Array(val).map { |value| hstore_like column, key, value }
