@@ -104,8 +104,8 @@ Now you can pass the filter_parameter hash ```{tagged_by_id: 45}```.
 
 The result of a predicate block should be a ```Sequel::SQL::Expression``` (ie
 one of Sequel's hash expressions in the simplest case) which will work instead
-of its named placeholder. That is, if the placeholder is inside a SELECT
-clause it worked work to give in an ORDER BY.
+of its named placeholder. So for example, if the placeholder is inside a SELECT
+clause it wouldn't work to give it an ORDER BY expression.
 
 2) You could also inherit from ```Philtre::Filter``` and override
 ```#predicates```. And optionally override ```Philtre.new``` (which is just a
