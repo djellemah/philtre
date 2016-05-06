@@ -1,6 +1,6 @@
 require 'sequel'
 
-Sequel.extension :blank
+Sequel.extension(:blank, :core_extensions, :pg_hstore, :pg_hstore_ops, :pg_array)
 
 require 'philtre/predicate_splitter'
 require 'philtre/predicate_dsl'
