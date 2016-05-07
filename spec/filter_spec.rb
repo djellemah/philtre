@@ -129,24 +129,70 @@ describe Philtre::Filter do
   end
 
   describe '#predicates' do
-    EASY_PREDICATES = %i[gt gte gteq lt lte lteq eq not_eq matches like not_like not_null null]
+    EASY_PREDICATES = %i[gt gte gteq lt lte lteq eq not_eq matches like not_like not_null null cont not_cont in not_in start not_start end not_end]
     TRICKY_PREDICATES = %i[like_all like_any not_blank blank]
 
     it 'creates predicates' do
-      described_class.predicates.predicate_names.sort.should == (EASY_PREDICATES + TRICKY_PREDICATES).sort
+      predicates = EASY_PREDICATES + TRICKY_PREDICATES
+      predicates += predicates.map { |predicate| "hstore_#{predicate}".to_sym }
+      described_class.predicates.predicate_names.sort.should == (predicates).sort
     end
 
     EASY_PREDICATES.each do |predicate|
       it "_#{predicate} becomes expression" do
         field = Faker::Lorem.word.to_sym
         value = Faker::Lorem.word
-        expr = described_class.predicates.call field, value
+        expr = described_class.predicates.call "#{field}_#{predicate}", value
 
         expr.should be_a(Sequel::SQL::BooleanExpression)
 
         expr.args.first.should be_a(Sequel::SQL::Identifier)
         expr.args.first.should == Sequel.expr(field)
-        expr.args.last.should == value
+
+        expected_value =
+        case predicate
+        when :start, :not_start
+         "^#{value}"
+        when :end, :not_end
+          "#{value}$"
+        else
+          value
+        end
+
+        expr.args.last.should == expected_value
+
+        expr.sql_literal(@dataset).should be_a(String)
+      end
+
+      it "_#{predicate} for hstore becomes expression" do
+        column = Faker::Lorem.word
+        field = Faker::Lorem.word
+        column_field = "#{column}[#{field}]".to_sym
+        value = Faker::Lorem.word
+
+        expr = described_class.predicates.call "#{column_field}_#{predicate}", value
+
+        expr.should be_a(Sequel::SQL::BooleanExpression)
+
+        expected_value =
+        case predicate
+        when :start, :not_start
+         "^#{value}"
+        when :end, :not_end
+          "#{value}$"
+        else
+          value
+        end
+
+        case predicate
+        when :eq, :not_eq
+          expr.args.first.should be_a(Sequel::SQL::PlaceholderLiteralString)
+          expr.args.first.args.should == [column.to_sym, {field => expected_value}]
+        else
+          expr.args.first.should be_a(Sequel::SQL::StringExpression)
+          expr.args.last.should == expected_value
+          expr.args.first.args.first.args.should == [column.to_sym, field.to_s]
+        end
 
         expr.sql_literal(@dataset).should be_a(String)
       end
@@ -161,9 +207,9 @@ describe Philtre::Filter do
         expr.op.should == :NOOP
 
         expr.args.first.op.should == :'~*'
-        ident, value = expr.args.first.args
+        ident, val = expr.args.first.args
         ident.value.should == field
-        value.should == value
+        val.should == value
       end
 
       it 'takes many' do
@@ -172,6 +218,35 @@ describe Philtre::Filter do
         expr = described_class.predicates.call :"#{field}_like_all", value
         expr.args.size.should == 3
         expr.op.should == :AND
+      end
+
+      describe 'hstore' do
+        it 'takes one' do
+          column = Faker::Lorem.word
+          field = Faker::Lorem.word
+          column_field = "#{column}[#{field}]".to_sym
+          value = Faker::Lorem.word
+
+          expr = described_class.predicates.call :"#{column_field}_like_all", value
+          expr.args.size.should == 1
+          expr.op.should == :NOOP
+
+          expr.args.first.op.should == :'~*'
+          ident, value = expr.args.first.args
+          ident.args.first.args.should == [column.to_sym, field.to_s]
+          value.should == value
+        end
+
+        it 'takes many' do
+          column = Faker::Lorem.word
+          field = Faker::Lorem.word
+          column_field = "#{column}[#{field}]".to_sym
+          value = 3.times.map { Faker::Lorem.word }
+
+          expr = described_class.predicates.call :"#{column_field}_like_all", value
+          expr.args.size.should == 3
+          expr.op.should == :AND
+        end
       end
     end
 
@@ -195,6 +270,35 @@ describe Philtre::Filter do
         expr = described_class.predicates.call :"#{field}_like_any", value
         expr.args.size.should == 3
         expr.op.should == :OR
+      end
+
+      describe 'hstore' do
+        it 'takes one' do
+          column = Faker::Lorem.word
+          field = Faker::Lorem.word
+          column_field = "#{column}[#{field}]".to_sym
+          value = Faker::Lorem.word
+
+          expr = described_class.predicates.call :"#{column_field}_like_any", value
+          expr.args.size.should == 1
+          expr.op.should == :NOOP
+
+          expr.args.first.op.should == :'~*'
+          ident, value = expr.args.first.args
+          ident.args.first.args.should == [column.to_sym, field.to_s]
+          value.should == value
+        end
+
+        it 'takes many' do
+          column = Faker::Lorem.word
+          field = Faker::Lorem.word
+          column_field = "#{column}[#{field}]".to_sym
+          value = 3.times.map { Faker::Lorem.word }
+
+          expr = described_class.predicates.call :"#{column_field}_like_any", value
+          expr.args.size.should == 3
+          expr.op.should == :OR
+        end
       end
     end
 
@@ -275,6 +379,51 @@ describe Philtre::Filter do
       expr.should be_a(Sequel::SQL::Expression)
       expr.sql_literal(dataset).should == '((year >= 1970) AND (year <= 2012))'
     end
+
+    describe 'hstore' do
+      it 'is == for store[name] only' do
+        expr = Sequel.expr(filter.to_expr(:'store[name]', 'hallelujah'))
+        expr.op.should == :NOOP
+        expr.args.first.should be_a(Sequel::SQL::PlaceholderLiteralString)
+        expr.args.first.args.first.should == :store
+        expr.args.first.args.last.should == {'name' => 'hallelujah'}
+      end
+
+      it 'like' do
+        expr = Sequel.expr(filter.to_expr(:'store[owner]_like', 'hallelujah'))
+        expr.op.should == :'~*'
+        expr.args.first.args.first.should be_a(Sequel::SQL::PlaceholderLiteralString)
+        expr.args.first.args.first.args.should == [:store, 'owner']
+        expr.args.last.should == 'hallelujah'
+      end
+
+      it 'keeps blank values' do
+        filter.to_expr(:'store[owner]', '').should_not be_nil
+        filter.to_expr(:'store[owner]', nil).should_not be_nil
+        filter.to_expr(:'store[owner]', []).should_not be_nil
+      end
+
+      it 'substitutes a field name' do
+        expr = Sequel.expr(filter.to_expr(:'store[owner]_like', 'hallelujah', :'heavens__store[owner]'))
+        expr.op.should == :'~*'
+        expr.args.first.args.first.should be_a(Sequel::SQL::PlaceholderLiteralString)
+        expr.args.first.args.first.args.should == [:store, 'owner']
+        expr.args.last.should == 'hallelujah'
+      end
+
+      it 'must always be a Sequel::SQL::Expression' do
+        filter.predicates.extend_with do
+          define_method 'store[year]_range' do |jumbled_years|
+            first, last = jumbled_years.sort.instance_eval { |ry| [ry.first, ry.last] }
+            {year: first..last}
+          end
+        end
+
+        expr = filter.to_expr(:'store[year]_range', [1984, 1970, 2012])
+        expr.should be_a(Sequel::SQL::Expression)
+        expr.sql_literal(dataset).should == '((year >= 1970) AND (year <= 2012))'
+      end
+    end
   end
 
   describe '#expr_for' do
@@ -301,6 +450,24 @@ describe Philtre::Filter do
       expr.args.first.tap do |field_expr|
         field_expr.column.should == 'name'
         field_expr.table.should == 'things'
+      end
+    end
+
+    describe 'hstore' do
+      let(:word) { Faker::Lorem.word }
+      let(:filter) { described_class.new :'store[name]' => word, :'store[title]' => Faker::Lorem.word }
+
+      it 'expression for existing value' do
+        filter.expr_for(:'store[name]').should_not be_nil
+        filter.expr_for(:'store[name]').should be_a(Sequel::SQL::BooleanExpression)
+      end
+
+      it 'alternate name' do
+        expr = filter.expr_for(:'store[name]', :'things__store[name]')
+        expr.should_not be_nil
+        expr.should be_a(Sequel::SQL::BooleanExpression)
+
+        expr.args.first.args.should == [:store, {'name' => word}]
       end
     end
   end

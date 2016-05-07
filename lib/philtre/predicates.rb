@@ -41,11 +41,43 @@ module Philtre
       field_name = Sequel.expr(field || splitter.field)
 
       define_singleton_method field_predicate do |value|
-        send suffix, field_name, value
+        # The full HStore column (the table column and the column inside the HStore)
+        raw_column = raw_column_from_identifier(field_name)
+
+        if hstore_column? raw_column
+          hstore_name, column_name = parse_hstore_column raw_column
+          send "hstore_#{suffix}", hstore_name.to_sym.hstore, column_name, value
+        else
+          send suffix, field_name, value
+        end
       end
     end
 
     protected :define_name_predicate
+
+    def raw_column_from_identifier(identifier)
+      case identifier
+        when Sequel::SQL::QualifiedIdentifier
+          identifier.column
+        else
+          identifier.value
+      end
+    end
+
+    def parse_hstore_column(name)
+      not_square_brackets = '([^\[\]]*)'
+      match_data = name.match(/#{not_square_brackets}\[#{not_square_brackets}\]/)
+      if match_data && match_data.size == 3
+        matched = match_data[1..2]
+        if matched.all?{|elem| !elem.nil? }
+          matched
+        end
+      end
+    end
+
+    alias_method :hstore_column?, :parse_hstore_column
+
+    protected :hstore_column?, :parse_hstore_column
 
     # TODO this should probably also be method_missing?
     # field is only used once for any given field_predicate
@@ -64,7 +96,7 @@ module Philtre
       # longest so that we don't get false positives from shorter predicates
       # that are substrings of longer predicates, eg blank matching
       # thing_not_blank.
-      DefaultPredicates.instance_methods.sort_by{|name| -name.length}
+      (DefaultPredicates.instance_methods + HStorePredicates.instance_methods).sort_by{|name| -name.length}
     end
 
     # Define the set of default predicates.
@@ -75,7 +107,9 @@ module Philtre
         Sequel.~(like expr, val)
       end
 
-      matches( :like ) {|expr, val|  Sequel.expr( expr => /#{val}/i) }
+      matches( :like, :cont ) {|expr, val| Sequel.expr(expr => /#{val}/i) }
+
+      alias_method :not_cont, :not_like
 
       def not_blank(expr, val)
         Sequel.~(blank expr, val)
@@ -96,6 +130,12 @@ module Philtre
       lt               {|expr, val|    expr <  val                   }
       lte( :lteq )     {|expr, val|    expr <= val                   }
 
+      not_in(:not_cont){|expr, val| ~Sequel.expr(expr => val)  }
+
+      def in(expr, arg)
+        Sequel.expr( expr => arg )
+      end
+
       # more complex predicates
       def like_all( expr, arg )
         exprs = Array(arg).map {|value| like expr, value }
@@ -106,9 +146,70 @@ module Philtre
         exprs = Array(arg).map {|value| like expr, value }
         Sequel.| *exprs
       end
+
+      not_start {|expr, val| Sequel.~(start expr, val) }
+      start     {|expr, val| Sequel.expr(expr => /^#{val}/i) }
+
+      not_end   {|expr, val| Sequel.~(send 'end', expr, val) }
+
+      define_method 'end' do |expr, val|
+        Sequel.expr(expr => /#{val}$/i)
+      end
+    end
+
+    HStorePredicates = PredicateDsl.new do
+      hstore_not_eq{|column, key, val| Sequel.~(hstore_eq column, key, val) }
+
+      def hstore_eq(column, key, val)
+        if val.is_a?(Array)
+          Sequel.expr(column[key] => val)
+        else
+          Sequel.expr(column.contains(Sequel.hstore({key => val})))
+        end
+      end
+
+      hstore_not_blank{|column, key, val| Sequel.~(hstore_blank column, key, val) }
+
+      def hstore_blank(column, key, _)
+        is_nil = Sequel.expr(column[key] => nil)
+        is_empty = Sequel.expr(column[key] => '')
+        Sequel.| is_nil, is_empty
+      end
+
+      hstore_not_like(:hstore_not_cont){|column, key, val| Sequel.~(hstore_like column, key, val) }
+
+      hstore_matches(:hstore_like, :hstore_cont){|column, key, val| Sequel.expr(column[key] => /#{val}/i) }
+
+      hstore_not_in{|column, key, val| Sequel.~(hstore_in column, key, val) }
+
+      hstore_in{|column, key, val| Sequel.expr(column[key] => val) }
+
+      hstore_gt{|column, key, val| column[key] > val }
+      hstore_gte(:hstore_gteq){|column, key, val| column[key] >= val }
+      hstore_lt{|column, key, val| column[key] < val }
+      hstore_lte(:hstore_lteq){|column, key, val| column[key] <= val }
+
+
+      hstore_not_start{|column, key, val| Sequel.~(hstore_start column, key, val) }
+      hstore_start{|column, key, val| Sequel.expr(column[key] => /^#{val}/i) }
+
+      hstore_not_end{|column, key, val| Sequel.~(hstore_end column, key, val) }
+      hstore_end{|column, key, val| Sequel.expr(column[key] => /#{val}$/i) }
+
+      def hstore_like_all(column, key, val)
+        exprs = Array(val).map{|value| hstore_like column, key, value }
+        Sequel.& *exprs
+      end
+
+      def hstore_like_any(column, key, val)
+        exprs = Array(val).map{|value| hstore_like column, key, value }
+        Sequel.| *exprs
+      end
+
     end
 
     # make them available to Predicate instances.
     include DefaultPredicates
+    include HStorePredicates
   end
 end

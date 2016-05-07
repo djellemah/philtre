@@ -69,6 +69,43 @@ describe Philtre::PredicateSplitter do
         end
       end
     end
+
+    describe 'hstore' do
+      describe 'successful' do
+        let(:splitter) { Philtre::PredicateSplitter.new('store[column]_like', 'fifteeen') }
+
+        it 'returns true' do
+          splitter.split_key(:like).should be_truthy
+        end
+
+        it 'keeps field as symbol' do
+          splitter.split_key :like
+          splitter.field.should == 'store[column]'.to_sym
+        end
+
+        it 'keeps op as symbol' do
+          splitter.split_key :like
+          splitter.op.should == :like
+        end
+      end
+
+      describe 'unsuccessful' do
+        let(:splitter) { Philtre::PredicateSplitter.new 'store[column]', 'fifteeen' }
+        it 'returns false' do
+          splitter.split_key(:like).should be_falsey
+        end
+
+        it 'keeps key as symbol' do
+          splitter.split_key :like
+          splitter.field.should == 'store[column]'.to_sym
+        end
+
+        it 'op is nil' do
+          splitter.split_key :like
+          splitter.op.should be_nil
+        end
+      end
+    end
   end
 end
 
