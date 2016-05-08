@@ -60,12 +60,15 @@ module Philtre
     alias [] call
 
     def predicate_names
-      DefaultPredicates.instance_methods
+      # ruby-2.3 no longer stores methods in order of definition. So sort by
+      # longest so that we don't get false positives from shorter predicates
+      # that are substrings of longer predicates, eg blank matching
+      # thing_not_blank.
+      DefaultPredicates.instance_methods.sort_by{|name| -name.length}
     end
 
     # Define the set of default predicates.
     DefaultPredicates = PredicateDsl.new do
-      # longer suffixes first, so they match first in define_name_predicate
       not_eq           {|expr, val| ~Sequel.expr( expr => val)       }
 
       def not_like( expr, val )
@@ -84,7 +87,6 @@ module Philtre
         Sequel.| is_nil, is_empty
       end
 
-      # and now the shorter suffixes
       eq               {|expr, val|  Sequel.expr( expr => val)       }
       gt               {|expr, val|    expr >  val                   }
       gte( :gteq )     {|expr, val|    expr >= val                   }
@@ -103,7 +105,7 @@ module Philtre
       end
     end
 
-    # make the available to Predicates instances.
+    # make them available to Predicate instances.
     include DefaultPredicates
   end
 end

@@ -213,6 +213,20 @@ describe Philtre::Filter do
       expr.args.last.op.should == :'!='
       expr.args.last.args.last.should == ''
     end
+
+    it 'blank' do
+      field = Sequel.expr Faker::Lorem.word
+      expr = described_class.predicates.call :"#{field}_blank", Faker::Lorem.word
+
+      expr.op.should == :OR
+
+      # the not-nil part
+      expr.args.first.op.should == :'IS'
+
+      # the not empty string part
+      expr.args.last.op.should == :'='
+      expr.args.last.args.last.should == ''
+    end
   end
 
   describe '#to_expr' do

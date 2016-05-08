@@ -29,6 +29,7 @@ describe Philtre::PredicateSplitter do
 
     describe 'unsuccessful' do
       let(:splitter){ Philtre::PredicateSplitter.new 'birth_year', 'fifteeen' }
+
       it 'returns false' do
         splitter.split_key( :like ).should be_falsey
       end
