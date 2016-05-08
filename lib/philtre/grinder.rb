@@ -1,4 +1,8 @@
-require 'ripar'
+begin
+  require 'ripar'
+rescue LoadError
+  "silently move on cos it's not critical and we'll just not add those bits"
+end
 
 require 'philtre/filter.rb'
 require 'philtre/place_holder.rb'

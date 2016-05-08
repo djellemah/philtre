@@ -1,19 +1,21 @@
 # TODO docs for this
-class Sequel::Dataset
-  include Ripar
+if defined? Ripar
+  class Sequel::Dataset
+    include Ripar
 
-  # make the roller understand dataset method
-  def roller
-    rv = super
-    class << rv
-      def to_dataset; riven end
+    # make the roller understand dataset method
+    def roller
+      rv = super
+      class << rv
+        def to_dataset; riven end
+      end
+      rv
     end
-    rv
-  end
 
-  # roll the block and return the resulting dataset immediately
-  def rolled( &blk )
-    roller.rive &blk
+    # roll the block and return the resulting dataset immediately
+    def rolled( &blk )
+      roller.rive &blk
+    end
   end
 end
 

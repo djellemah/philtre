@@ -27,29 +27,36 @@ describe Sequel::Dataset do
 
   it 'passes apply_unknown'
 
-  describe '#roller' do
-    it 'result has to_dataset' do
-      rlr = subject.roller do
-        where title: 'Exalted Fromaginess'
+  describe 'fancy stuff' do
+
+    describe '#roller' do
+      it 'result has to_dataset' do
+        pending "Ripar optionally not loaded" unless defined? Ripar
+
+        rlr = subject.roller do
+          where title: 'Exalted Fromaginess'
+        end
+
+        # This depends on Ripar, so it's a bit fragile
+        rlr.should respond_to(:__class__)
+        rlr.__class__.should == Ripar::Roller
+
+        rlr.should_not respond_to(:datset)
+        rlr.should respond_to(:to_dataset)
       end
-
-      # This depends on Ripar, so it's a bit fragile
-      rlr.should respond_to(:__class__)
-      rlr.__class__.should == Ripar::Roller
-
-      rlr.should_not respond_to(:datset)
-      rlr.should respond_to(:to_dataset)
     end
-  end
 
-  describe '#rolled' do
-    it 'gives back a rolled dataset' do
-      rlr = subject.rolled do
-        where title: 'Exalted Fromaginess'
+    describe '#rolled' do
+      it 'gives back a rolled dataset' do
+        pending "Ripar optionally not loaded" unless defined? Ripar
+
+        rlr = subject.rolled do
+          where title: 'Exalted Fromaginess'
+        end
+        rlr.should be_a(Sequel::Dataset)
+        rlr.should_not respond_to(:datset)
+        rlr.should_not respond_to(:to_dataset)
       end
-      rlr.should be_a(Sequel::Dataset)
-      rlr.should_not respond_to(:datset)
-      rlr.should_not respond_to(:to_dataset)
     end
   end
 end

@@ -163,7 +163,7 @@ is canonical in that all the other possibilities use it.
 
 ## Highly Advanced Usage
 
-Sometimes method chaining gets ugly. So you can say
+Sometimes method chaining gets ugly. So you can install gem ripar, then you can say
 
 ``` ruby
   store_id_range = 20..90

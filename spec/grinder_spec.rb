@@ -1,5 +1,4 @@
 require_relative 'spec_helper.rb'
-require 'ripar'
 
 require_relative '../lib/philtre.rb'
 
@@ -159,6 +158,8 @@ describe Philtre::Grinder do
   end
 
   it 'handles rollers' do
+    pending "Ripar optionally not loaded" unless defined? Ripar
+
     grinder = Philtre::Grinder.new Philtre::Filter.new(person_id: 212728)
     tds = ds.roller do
       where linkage: other_ds.where( :person_id.lieu )
