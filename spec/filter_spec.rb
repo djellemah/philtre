@@ -199,7 +199,7 @@ describe Philtre::Filter do
     end
 
     it 'not_blank' do
-      field = Sequel.expr Faker::Lorem.word
+      field = Faker::Lorem.word
       expr = described_class.predicates.call :"#{field}_not_blank", Faker::Lorem.word
 
       expr.op.should == :AND
@@ -213,7 +213,7 @@ describe Philtre::Filter do
     end
 
     it 'blank' do
-      field = Sequel.expr Faker::Lorem.word
+      field = Faker::Lorem.word
       expr = described_class.predicates.call :"#{field}_blank", Faker::Lorem.word
 
       expr.op.should == :OR
