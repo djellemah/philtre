@@ -1,6 +1,4 @@
-require 'rspec'
-require 'faker'
-require 'sequel'
+require_relative 'spec_helper.rb'
 
 require_relative '../lib/philtre/grinder.rb'
 require_relative '../lib/philtre/sequel_extensions.rb'

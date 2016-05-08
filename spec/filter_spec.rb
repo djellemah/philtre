@@ -1,6 +1,4 @@
-require 'rspec'
-require 'faker'
-
+require_relative 'spec_helper.rb'
 require_relative '../lib/philtre/filter.rb'
 
 # for blank?

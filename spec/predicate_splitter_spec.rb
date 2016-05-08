@@ -1,6 +1,4 @@
-require 'rspec'
-require 'faker'
-
+require_relative 'spec_helper.rb'
 require_relative '../lib/philtre/predicate_splitter.rb'
 require_relative '../lib/philtre/predicates.rb'
 
