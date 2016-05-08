@@ -170,9 +170,9 @@ describe Philtre::Grinder do
   end
 
   it 'handles Models' do
-    Sequel::Model.db = Sequel.sqlite
+    Sequel::Model.db = Sequel.mock
     class Ods < Sequel::Model(:ods); end
     Philtre::Grinder.new( Philtre::Filter.new ).transform(Ods).should be_a(Sequel::Dataset)
-    Philtre::Grinder.new( Philtre::Filter.new ).transform(Ods).sql.should =~ /SELECT \* FROM .ods./
+    Philtre::Grinder.new( Philtre::Filter.new ).transform(Ods).sql.should =~ /SELECT \* FROM ods/
   end
 end
