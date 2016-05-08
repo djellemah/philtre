@@ -2,6 +2,7 @@ require 'rspec'
 require 'faker'
 
 require_relative '../lib/philtre/predicate_splitter.rb'
+require_relative '../lib/philtre/predicates.rb'
 
 # for blank?
 Sequel.extension :blank
@@ -44,9 +45,29 @@ describe Philtre::PredicateSplitter do
     end
 
     describe 'custom predicate' do
-      let(:splitter){ Philtre::PredicateSplitter.new( 'custom_predicate', 'fifteeen' ) }
-      it 'accepts the whole thing' do
+      it 'accepts the whole thing, undeterred by _' do
+        splitter = Philtre::PredicateSplitter.new 'custom_predicate', 'fifteeen'
         (splitter === :custom_predicate).should === 0
+      end
+    end
+
+    describe "'ware the false matches, laddie" do
+      Philtre::Predicates::DefaultPredicates.instance_methods.each do |suffix|
+        word = Faker::Lorem.words(rand(1..3)) * '_'
+
+        let(:suffix){suffix}
+        let(:word){word}
+
+        it "#{word}#{suffix} unsplit" do
+          splitter = Philtre::PredicateSplitter.new "#{word}#{suffix}", 'blabla'
+          splitter.split_key(suffix).should be_falsey
+        end
+
+        it "#{word}_#{suffix} split" do
+          splitter = Philtre::PredicateSplitter.new "#{word}_#{suffix}", 'unbla'
+          splitter.split_key suffix
+          splitter.field.should == word.to_sym
+        end
       end
     end
   end

@@ -17,7 +17,7 @@ module Philtre
     # split suffix from the key and store the two values as name and op
     # return truthy if successful
     def split_key( suffix )
-      rv = @key =~ /(.*?)_?(#{suffix})$/
+      rv = @key =~ /\A(?:(.*?)_)?(#{suffix})\z/
       @field, @op = $1, $2
       rv
     end
