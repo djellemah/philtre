@@ -72,7 +72,7 @@ module Philtre
     # the filter expression.
     def valued_parameters
       filter_parameters.select do |key,value|
-        key.to_sym != :order && (value.is_a?(Array) || !value.blank?)
+        key.to_sym != :order && (value.is_a?(Array) || value != '' || !value.blank?)
       end
     end
 
