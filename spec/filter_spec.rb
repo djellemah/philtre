@@ -348,10 +348,6 @@ describe Philtre::Filter do
       described_class.new( address: '' ).expressions.should be_empty
     end
 
-    it 'ignores nil value' do
-      described_class.new( address: nil ).expressions.should be_empty
-    end
-
     it 'accepts []' do
       expressions = described_class.new( flavour: [] ).expressions
       expressions.size.should == 1
@@ -414,12 +410,6 @@ describe Philtre::Filter do
 
     it 'excludes blank values' do
       filter.filter_parameters[:name] = ''
-      sql = filter.apply(@dataset).sql
-      sql.should =~ /select \* from planks where \(title = '\w+'\)$/i
-    end
-
-    it 'excludes nil values' do
-      filter.filter_parameters[:name] = nil
       sql = filter.apply(@dataset).sql
       sql.should =~ /select \* from planks where \(title = '\w+'\)$/i
     end
