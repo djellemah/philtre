@@ -1,0 +1,7 @@
+== 0.1.1
+* drop support for ruby-2.0.0
+* add customisable parameter filtering
+* null and not_null predicates
+
+== 0.1.0
+* initial release
