@@ -18,6 +18,9 @@ module Philtre
       extend PredicateDsl.new(&bloc)
     end
 
+    NOT_SQUARE_BRACKETS = '([^\[\]]*)'.freeze
+    HSTORE_REGEX = /#{NOT_SQUARE_BRACKETS}\[#{NOT_SQUARE_BRACKETS}\]/.freeze
+
     # Convert a field_predicate (field_op format), a value and a SQL field
     # name using the set of predicates, to something convertible to a Sequel
     # expression.
@@ -36,48 +39,55 @@ module Philtre
         splitter =~ suffix
       end
 
-      # wrap the field name first, to infect the expressions so all the
-      # operators work.
-      field_name = Sequel.expr(field || splitter.field)
+      field_name = field || splitter.field
 
-      define_singleton_method field_predicate do |value|
-        # The full HStore column (the table column and the column inside the HStore)
-        raw_column = raw_column_from_identifier(field_name)
+      # TODO move splitter into a method so it doesn't get bound by
+      # define_singleton_method below.
+      if hstore_match_data = HSTORE_REGEX.match(field_name)
+        hstore_qualified_name, hstore_key = parse_hstore_column hstore_match_data
+        # unqualify the table__column and convert it to an hstore expr
+        hstore_column_expr = Sequel.hstore(hstore_column_from_identifier(Sequel.expr(hstore_qualified_name.to_sym)).to_sym).freeze
+        hstore_method = "hstore_#{suffix}".to_sym
 
-        if hstore_column? raw_column
-          hstore_name, column_name = parse_hstore_column raw_column
-          send "hstore_#{suffix}", hstore_name.to_sym.hstore, column_name, value
-        else
-          send suffix, field_name, value
+        define_singleton_method field_predicate do |value|
+          send hstore_method, hstore_column_expr, hstore_key, value
+        end
+      else
+        # wrap the field name first, to infect the expressions so all the
+        # operators work.
+        field_expr = Sequel.expr(field_name).freeze
+
+        define_singleton_method field_predicate do |value|
+          send suffix, field_expr, value
         end
       end
     end
 
     protected :define_name_predicate
 
-    def raw_column_from_identifier(identifier)
-      case identifier
-        when Sequel::SQL::QualifiedIdentifier
-          identifier.column
-        else
-          identifier.value
-      end
-    end
-
-    def parse_hstore_column(name)
-      not_square_brackets = '([^\[\]]*)'
-      match_data = name.match(/#{not_square_brackets}\[#{not_square_brackets}\]/)
-      if match_data && match_data.size == 3
-        matched = match_data[1..2]
-        if matched.all?{|elem| !elem.nil? }
-          matched
+    # The full HStore column (the table column and the column inside the HStore)
+    def parse_hstore_column(hstore_match_data)
+      if hstore_match_data.size == 3
+        # not sure why this needs to be checked
+        matched = hstore_match_data[1..2]
+        if matched.all?{|elem| !elem.nil?}
+          matched.map &:freeze
         end
       end
     end
 
-    alias_method :hstore_column?, :parse_hstore_column
+    protected :parse_hstore_column
 
-    protected :hstore_column?, :parse_hstore_column
+    def hstore_column_from_identifier(identifier)
+      case identifier
+      when Sequel::SQL::QualifiedIdentifier
+        identifier.column
+      else
+        identifier.value
+      end
+    end
+
+    protected :hstore_column_from_identifier
 
     # TODO this should probably also be method_missing?
     # field is only used once for any given field_predicate
@@ -205,7 +215,6 @@ module Philtre
         exprs = Array(val).map{|value| hstore_like column, key, value }
         Sequel.| *exprs
       end
-
     end
 
     # make them available to Predicate instances.
