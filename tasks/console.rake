@@ -3,7 +3,7 @@ task :console do
   ARGV.shift()
   ENV['RUBYLIB'] ||= ''
   ENV['RUBYLIB'] += ":#{File.expand_path('.')}/lib/philtre"
-  exec "pry -r philtre -I ./lib -I ."
+  exec "pry -r sequel -r philtre -I ./lib -I ."
 end
 
 task :pry => :console
