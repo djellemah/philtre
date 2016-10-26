@@ -180,6 +180,8 @@ describe Philtre::Filter do
          "^#{value}"
         when :end, :not_end
           "#{value}$"
+        when :null, :not_null
+          nil
         else
           value
         end

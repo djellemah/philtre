@@ -180,6 +180,9 @@ module Philtre
 
       hstore_not_blank{|column, key, val| Sequel.~(hstore_blank column, key, val) }
 
+      hstore_null {|column,key,_| Sequel.expr(column[key] => nil)}
+      hstore_not_null {|column,key,_| Sequel.~(Sequel.expr(column[key] => nil))}
+
       def hstore_blank(column, key, _)
         is_nil = Sequel.expr(column[key] => nil)
         is_empty = Sequel.expr(column[key] => '')
@@ -198,7 +201,6 @@ module Philtre
       hstore_gte(:hstore_gteq){|column, key, val| column[key] >= val }
       hstore_lt{|column, key, val| column[key] < val }
       hstore_lte(:hstore_lteq){|column, key, val| column[key] <= val }
-
 
       hstore_not_start{|column, key, val| Sequel.~(hstore_start column, key, val) }
       hstore_start{|column, key, val| Sequel.expr(column[key] => /^#{val}/i) }
