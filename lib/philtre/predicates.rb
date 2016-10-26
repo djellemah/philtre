@@ -81,6 +81,9 @@ module Philtre
         Sequel.~(blank expr, val)
       end
 
+      null {|expr,_| Sequel.expr(expr => nil)}
+      not_null {|expr,_| Sequel.~(Sequel.expr(expr => nil))}
+
       def blank(expr, _)
         is_nil = Sequel.expr(expr => nil)
         is_empty = Sequel.expr(expr => '')

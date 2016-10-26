@@ -75,6 +75,8 @@ There are a range of predefined predicates, mostly borrowed from the other searc
   not_blank
   like_all
   like_any
+  null
+  not_null
 ```
 
 ## Custom Predicates

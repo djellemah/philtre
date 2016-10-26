@@ -112,7 +112,7 @@ describe Philtre::Filter do
       @dataset.order( *filter.order_clause ).sql.should =~ /order by things desc$/i
     end
 
-    it 'respecs asc' do
+    it 'respects asc' do
       filter = described_class.new one: 1, two: 2, order: 'things_desc'
       @dataset.order( *filter.order_clause ).sql.should =~ /order by things desc$/i
     end
@@ -129,7 +129,7 @@ describe Philtre::Filter do
   end
 
   describe '#predicates' do
-    EASY_PREDICATES = %i[gt gte gteq lt lte lteq eq not_eq matches like not_like]
+    EASY_PREDICATES = %i[gt gte gteq lt lte lteq eq not_eq matches like not_like not_null null]
     TRICKY_PREDICATES = %i[like_all like_any not_blank blank]
 
     it 'creates predicates' do
@@ -203,13 +203,14 @@ describe Philtre::Filter do
       expr = described_class.predicates.call :"#{field}_not_blank", Faker::Lorem.word
 
       expr.op.should == :AND
+      is_not_null, not_equals_empty = expr.args
 
       # the not-nil part
-      expr.args.first.op.should == :'IS NOT'
+      is_not_null.op.should == :'IS NOT'
 
       # the not empty string part
-      expr.args.last.op.should == :'!='
-      expr.args.last.args.last.should == ''
+      not_equals_empty.op.should == :'!='
+      not_equals_empty.args.last.should == ''
     end
 
     it 'blank' do
@@ -218,12 +219,14 @@ describe Philtre::Filter do
 
       expr.op.should == :OR
 
-      # the not-nil part
-      expr.args.first.op.should == :'IS'
+      is_null, equals_empty = expr.args
 
-      # the not empty string part
-      expr.args.last.op.should == :'='
-      expr.args.last.args.last.should == ''
+      # the null part
+      is_null.op.should == :'IS'
+
+      # the empty string part
+      equals_empty.op.should == :'='
+      equals_empty.args.last.should == ''
     end
   end
 
