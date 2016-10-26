@@ -418,10 +418,20 @@ describe Philtre::Filter do
       sql.should =~ /select \* from planks where \(title = '\w+'\)$/i
     end
 
-    it 'excludes nil values' do
+    it 'excludes nil values by default' do
       filter.filter_parameters[:name] = nil
       sql = filter.apply(@dataset).sql
       sql.should =~ /select \* from planks where \(title = '\w+'\)$/i
+    end
+
+    it 'can customise value exclusion' do
+      def filter.valued_parameter?(key,value)
+        key != :order
+      end
+
+      filter.filter_parameters[:name] = nil
+      sql = filter.apply(@dataset).sql
+      sql.should =~ /SELECT \* FROM planks WHERE \(\(name IS NULL\) AND \(title = '\w+'\)\)/
     end
   end
 

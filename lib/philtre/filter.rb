@@ -28,11 +28,12 @@ module Philtre
     def initialize( filter_parameters = nil, &custom_predicate_block )
       # This must be a new instance of Hash, because sometimes
       # HashWithIndifferentAccess is passed in, which breaks things in here.
+
       # Don't use symbolize_keys because that creates a dependency on ActiveSupport
+      # have to iterate anyway to convert keys to symbols
       @filter_parameters =
       if filter_parameters
-        # preserve 2.0 compatibility
-        filter_parameters.inject({}){|ha,(k,v)| ha[k.to_sym] = v; ha}
+        filter_parameters.each_with_object(Hash.new){|(k,v),ha| ha[k.to_sym] = v}
       else
         {}
       end
@@ -67,12 +68,22 @@ module Philtre
 
     alias apply call
 
+    # called by valued_parameters to generate the set of expressions. This
+    # returns true for a value that show up in the set of expressions, false
+    # otherwise.
+    #
+    # Intended to be overridden if necessary.
+    def valued_parameter?( key, value )
+      value.is_a?(Array) || !value.blank?
+    end
+
     # Values in the parameter list which are not blank, and not
     # an ordering. That is, parameters which will be used to generate
     # the filter expression.
     def valued_parameters
-      filter_parameters.select do |key,value|
-        key.to_sym != :order && (value.is_a?(Array) || !value.blank?)
+      @valued_parameters ||= filter_parameters.select do |key,value|
+        # :order is special, it must always be excluded
+        key.to_sym != :order && valued_parameter?(key,value)
       end
     end
 
@@ -164,6 +175,7 @@ module Philtre
       @order_expressions = nil
       @order_hash = nil
       @order_clause = nil
+      @valued_parameters = nil
     end
 
     def clone( extra_parameters = {} )
