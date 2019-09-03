@@ -124,8 +124,15 @@ protected
       obj.clone Hash[ v(obj.opts).map{|k,val| [k, val.is_a?(Philtre::EmptyExpression) ? false : val]} ]
 
     # for Sequel::Models
-    when ->(obj){obj.respond_to? :dataset}
-      v obj.dataset
+    when -> obj { obj.is_a?(Class) && obj.ancestors.include?(Sequel::Model) }
+      # From sequel-5.x.x, I suspect,
+      # SomeModel.dataset.opts includes :row_proc => SomeModel and :model => SomeModel
+      # which sends v into an endless loop.
+      opts = obj.dataset.opts.reject{|_,v| v == obj}
+      transformed = v(opts).map do |k,val|
+        [k, val.is_a?(Philtre::EmptyExpression) ? false : val]
+      end
+      obj.dataset.clone Hash[transformed]
 
     # for other things that are convertible to dataset
     when ->(obj){obj.respond_to? :to_dataset}
