@@ -7,7 +7,7 @@ Sequel.extension :core_extensions
 
 describe Philtre::Grinder do
   def ds
-    @ds ||= Sequel.mock[:t].filter( :name.lieu, :title.lieu ).order( :birth_year.lieu )
+    @ds ||= Sequel.mock[:t].filter( Sequel.&(:name.lieu, :title.lieu) ).order( :birth_year.lieu )
   end
 
   def other_ds
@@ -138,7 +138,7 @@ describe Philtre::Grinder do
       @ds ||=
       begin
         subselect = Sequel.mock[:sub].select(:id)
-        Sequel.mock[:t].filter( :name.lieu, :title.lieu, person_id: subselect ).order( :birth_year.lieu )
+        Sequel.mock[:t].filter( Sequel.&(:name.lieu, :title.lieu, person_id: subselect) ).order( :birth_year.lieu )
       end
     end
 

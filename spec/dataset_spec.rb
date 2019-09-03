@@ -9,7 +9,7 @@ Sequel.extension :core_extensions
 
 describe Sequel::Dataset do
   subject do
-    Sequel.mock[:t].filter( :name.lieu, :title.lieu ).order( :birth_year.lieu )
+    Sequel.mock[:t].filter( Sequel.&(:name.lieu, :title.lieu) ).order( :birth_year.lieu )
   end
 
   describe '#grind' do

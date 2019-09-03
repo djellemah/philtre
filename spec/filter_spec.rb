@@ -8,10 +8,17 @@ describe Philtre::Filter do
   # must be in before otherwise it's unpleasant to hook the
   # class in to the dataset.
   before :all do
-    @dataset = Sequel.mock[:planks]
+    @dataset = Sequel.mock[:planks].dup
     class Plank < Sequel::Model; end
     # just stop whining and generate the bleedin' sql, k?
-    def @dataset.supports_regexp?; true end
+    # def @dataset.supports_regexp?; true end
+  end
+
+  # replacement for remove Sequel::Dataset.sql_literal
+  # that is, create a string from an expression and dataset
+  def sql_of( expr, dataset)
+    dataset.send :literal_expression_append, rv=String.new, expr
+    rv
   end
 
   attr_reader :dataset
@@ -85,7 +92,7 @@ describe Philtre::Filter do
 
     it 'defaults to asc' do
       filter = described_class.new one: 1, two: 2, order: 'things'
-      sqlfrag = filter.order_expr(:things).sql_literal(dataset)
+      sqlfrag = sql_of filter.order_expr(:things), dataset
       sqlfrag.should == 'things ASC'
     end
   end
@@ -148,7 +155,7 @@ describe Philtre::Filter do
         expr.args.first.should == Sequel.expr(field)
         expr.args.last.should == value
 
-        expr.sql_literal(@dataset).should be_a(String)
+        sql_of(expr, @dataset).should be_a(String)
       end
     end
 
@@ -255,11 +262,11 @@ describe Philtre::Filter do
     end
 
     it 'substitutes a field name' do
-      expr = Sequel.expr( filter.to_expr( :owner_like, 'hallelujah', :heavens__salutation ) )
+      expr = Sequel.expr( filter.to_expr( :owner_like, 'hallelujah', Sequel.qualify(:heavens, :salutation) ) )
       expr.op.should == :'~*'
       expr.args.first.should be_kind_of(Sequel::SQL::QualifiedIdentifier)
-      expr.args.first.column.should == 'salutation'
-      expr.args.first.table.should == 'heavens'
+      expr.args.first.column.should == :salutation
+      expr.args.first.table.should == :heavens
       expr.args.last.should == 'hallelujah'
     end
 
@@ -273,7 +280,7 @@ describe Philtre::Filter do
 
       expr = filter.to_expr( :year_range, [1984, 1970, 2012] )
       expr.should be_a(Sequel::SQL::Expression)
-      expr.sql_literal(dataset).should == '((year >= 1970) AND (year <= 2012))'
+      sql_of(expr, dataset).should == '((year >= 1970) AND (year <= 2012))'
     end
   end
 
@@ -294,13 +301,13 @@ describe Philtre::Filter do
     end
 
     it 'alternate name' do
-      expr = filter.expr_for(:name, :things__name)
+      expr = filter.expr_for(:name, Sequel.qualify(:things, :name) )
       expr.should_not be_nil
       expr.should be_a(Sequel::SQL::BooleanExpression)
 
       expr.args.first.tap do |field_expr|
-        field_expr.column.should == 'name'
-        field_expr.table.should == 'things'
+        field_expr.column.should == :name
+        field_expr.table.should == :things
       end
     end
   end
@@ -314,11 +321,11 @@ describe Philtre::Filter do
     end
 
     it 'ascending' do
-      filter.order_for(:year).sql_literal(dataset).should == 'year ASC'
+      sql_of(filter.order_for(:year), dataset).should == 'year ASC'
     end
 
     it 'name clash' do
-      filter.order_for(:title).sql_literal(dataset).should == 'title ASC'
+      sql_of(filter.order_for(:title), dataset).should == 'title ASC'
     end
   end
 
