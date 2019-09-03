@@ -1,10 +1,13 @@
 language: ruby
 rvm:
-  - 2.1.10
-  - 2.2.5
-  - 2.3.1
-  - jruby-9.0.5.0
-  - jruby-9.1.2.0
+  - 2.4
+  - 2.5
+  - 2.6
+
+  # srsly, not fighting with this
+  # - jruby-9.0
+  # - jruby-9.1
+  # - jruby-9.2
   # does not install on travis as of 26-Oct-2016
   # - rbx
   # - rbx-2
