@@ -52,7 +52,7 @@ describe Philtre::PredicateSplitter do
 
     describe "'ware the false matches, laddie" do
       Philtre::Predicates::DefaultPredicates.instance_methods.each do |suffix|
-        word = Faker::Lorem.words(rand(1..3)) * '_'
+        word = Faker::Lorem.words(number: rand(1..3)) * '_'
 
         let(:suffix){suffix}
         let(:word){word}
