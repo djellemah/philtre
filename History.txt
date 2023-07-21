@@ -1,3 +1,5 @@
+* github-actions rspecs on linux and macos
+
 == 0.1.2
 * fix grinder and various specs to be compatible with Sequel-5.x (tested with Sequel-5.24.0)
 * drop travis support for jruby and <ruby-2.4.0 - it might still work ok but it won't be ci tested
