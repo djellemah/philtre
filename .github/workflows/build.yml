@@ -1,0 +1,57 @@
+name: rspecs
+
+on:
+  workflow_dispatch: {}
+  push:
+    tags: v*
+
+jobs:
+  rspec:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # note 20-Jul-2023 2.7.8 is EOL
+        ruby_version: ['2.7.8', '3.0.6', '3.1.4', '3.2.2']
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: ${{ matrix.ruby_version }}
+
+    - run: bundle install
+
+    # install from ppa for up-to-date version
+    - name: install ubuntu packages
+      run: |
+        sudo apt-get update
+
+        # otherwise it prompts for timezone
+        sudo apt-get install -y tzdata
+        sudo apt-get install -y software-properties-common sqlite3
+
+    - run: rspec
+
+  rspec-macos:
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        # note 20-Jul-2023 2.7.8 is EOL
+        ruby_version: ['2.7.8', '3.0.6', '3.1.4', '3.2.2']
+
+    steps:
+    - name: install brew packages
+      run: |
+        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+        brew install sqlite3
+
+    - uses: actions/checkout@v3
+
+    - uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: ${{ matrix.ruby_version }}
+
+    - run: bundle install
+
+    - run: rspec
